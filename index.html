@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GIF / Sheet → Sprite Sheet (upload ใหม่ รับทุกไฟล์)</title>
+<title>Media (Video/GIF/Image) → Sprite Sheet + Roblox Player</title>
 <style>
   :root{
     --bg:#0e1116; --panel:#161b22; --panel2:#1c2430; --line:#2a3441;
     --fg:#e6edf3; --dim:#8b98a5; --accent:#58a6ff; --ok:#3fb950;
-    --err:#f85149; --gif:#a371f7; --warn:#d29922; --drop:#58a6ff;
+    --err:#f85149; --gif:#a371f7; --warn:#d29922; --vid:#f0883e;
   }
   *{box-sizing:border-box}
   body{
@@ -30,6 +30,8 @@
   .badge.show{display:inline-flex}
   .badge.gif{background:#1a1430; border:1px solid #4a3070; color:var(--gif)}
   .badge.gif::before{content:"●"; font-size:8px}
+  .badge.vid{background:#2a1a0e; border:1px solid #5c3a1a; color:var(--vid)}
+  .badge.vid::before{content:"●"; font-size:8px}
   .badge.ok{background:#0e2a17; border:1px solid #1f4a2b; color:var(--ok)}
   .badge.ok::before{content:"●"; font-size:8px}
 
@@ -49,7 +51,6 @@
     letter-spacing:.9px; color:var(--dim); font-weight:600;
   }
 
-  /* ★ NEW: drop zone ใหญ่ขึ้น + feedback ชัดเจน */
   .drop{
     border:2px dashed var(--line); border-radius:10px; padding:22px 12px;
     text-align:center; color:var(--dim); cursor:pointer;
@@ -58,7 +59,7 @@
   }
   .drop:hover{border-color:var(--accent); color:var(--fg); background:#1b2531}
   .drop.over{
-    border-color:var(--drop); color:var(--fg);
+    border-color:var(--accent); color:var(--fg);
     background:#1e2e44;
     box-shadow:inset 0 0 0 3px rgba(88,166,255,.15), 0 0 20px rgba(88,166,255,.3);
   }
@@ -79,6 +80,7 @@
     background:#0d1117; border:1px solid var(--line); color:var(--dim);
     font-family:ui-monospace,monospace;
   }
+  .drop .fmt.vid{color:var(--vid); border-color:#5c3a1a; background:#2a1a0e}
   .drop .paste-hint{
     font-size:11px; color:var(--dim); margin-top:8px;
     display:flex; align-items:center; justify-content:center; gap:4px;
@@ -89,7 +91,6 @@
     font-family:ui-monospace,monospace;
   }
 
-  /* ★ NEW: pending file list */
   .pending-list{
     margin-top:10px; max-height:140px; overflow-y:auto;
     background:#0a0d12; border:1px solid var(--line); border-radius:6px;
@@ -104,14 +105,19 @@
   .pending-item .icon{font-size:14px}
   .pending-item .name{
     flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    color:var(--fg);
   }
   .pending-item .size{color:var(--dim); font-family:ui-monospace,monospace; font-size:10.5px}
+  .pending-item .kind{
+    font-size:9px; padding:1px 5px; border-radius:3px;
+    background:#0d1117; border:1px solid var(--line); color:var(--dim);
+    text-transform:uppercase; font-family:ui-monospace,monospace;
+  }
+  .pending-item .kind.gif{color:var(--gif); border-color:#4a3070}
+  .pending-item .kind.vid{color:var(--vid); border-color:#5c3a1a}
   .pending-item .load-btn{
     font-size:10px; padding:2px 7px; border-radius:4px;
     background:#1f6feb; border:1px solid #1f6feb; color:#fff; cursor:pointer;
   }
-  .pending-item .load-btn:hover{background:#2d7ff9}
   .pending-item.active{background:#1f2a3a}
   .pending-item.active .name{color:var(--ok)}
 
@@ -136,8 +142,25 @@
   button.primary:hover:not(:disabled){background:#2d7ff9}
   button.ok{background:#238636; border-color:#238636; color:#fff}
   button.ok:hover:not(:disabled){background:#2ea043}
+  button.danger{background:#7a2020; border-color:#7a2020; color:#fff}
   .btns{display:grid; grid-template-columns:1fr 1fr; gap:6px}
   .btns.full{grid-template-columns:1fr}
+
+  /* Progress bar */
+  .progress-wrap{display:none; margin-top:10px}
+  .progress-wrap.show{display:block}
+  .progress{
+    height:8px; background:#0a0d12; border-radius:4px; overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .progress-bar{
+    height:100%; background:linear-gradient(90deg,#1f6feb,#58a6ff);
+    width:0%; transition:width .1s;
+  }
+  .progress-text{
+    font-size:11px; color:var(--dim); margin-top:4px;
+    display:flex; justify-content:space-between;
+  }
 
   .stage{display:flex; flex-direction:column; gap:12px}
   .canvas-wrap{
@@ -148,7 +171,7 @@
     display:flex; justify-content:space-between; align-items:baseline;
     margin-bottom:8px; gap:10px; flex-wrap:wrap;
   }
-  .canvas-title{font-size:13px; font-weight:600; color:var(--fg)}
+  .canvas-title{font-size:13px; font-weight:600}
   .canvas-title .accent{color:var(--accent)}
   .canvas-meta{font-size:11.5px; color:var(--dim); font-variant-numeric:tabular-nums}
   .canvas-meta b{color:var(--fg)}
@@ -180,10 +203,7 @@
     background:#080a0e; border-radius:6px;
     border:1px solid var(--line); margin-top:8px;
     min-height:70px; align-items:center;
-    scrollbar-width:thin;
   }
-  .filmstrip::-webkit-scrollbar{height:8px}
-  .filmstrip::-webkit-scrollbar-thumb{background:#2a3441; border-radius:4px}
   .filmstrip canvas{
     border:2px solid #2a3441; border-radius:3px;
     cursor:pointer; flex-shrink:0; display:block;
@@ -206,6 +226,7 @@
   }
   .pill.ok{color:var(--ok); border-color:#1f4a2b}
   .pill.gif{color:var(--gif); border-color:#4a3070; background:#1a1430}
+  .pill.vid{color:var(--vid); border-color:#5c3a1a; background:#2a1a0e}
   .pill.warn{color:var(--warn); border-color:#5c4500; background:#2a2000}
   .pill.accent{color:var(--accent); border-color:#1f4a80; background:#0d1f33}
 
@@ -217,6 +238,7 @@
   .status.ok{color:var(--ok)}
   .status.err{color:var(--err)}
   .status.gif{color:var(--gif)}
+  .status.vid{color:var(--vid)}
   .status.warn{color:var(--warn)}
   .status.loading{color:var(--accent); position:relative; padding-left:26px}
   .status.loading::before{
@@ -251,7 +273,6 @@
   .frame-row .pos{color:var(--accent); min-width:80px}
   .frame-row .hash{color:#5a6a7a; font-size:10px}
 
-  /* ★ Toast notification */
   .toast{
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
     background:#1c2430; border:1px solid var(--line); border-radius:8px;
@@ -270,9 +291,10 @@
 <body>
 
 <header>
-  <h1>🎞️ GIF / Sheet → Sprite Sheet</h1>
-  <span class="sub">รับทุกไฟล์ · ตรวจด้วย magic bytes · paste ได้</span>
-  <span class="badge gif" id="gifBadge">GIF: <b id="gifBadgeCount">0</b> เฟรม</span>
+  <h1>🎬 Media → Sprite Sheet + Roblox Player</h1>
+  <span class="sub">วิดีโอ · GIF · รูปภาพ → PNG เดียว · ImageRectOffset</span>
+  <span class="badge gif" id="gifBadge">GIF: <b id="gifBadgeCount">0</b></span>
+  <span class="badge vid" id="vidBadge">VIDEO: <b id="vidBadgeCount">0</b></span>
   <span class="badge ok" id="readyBadge">● พร้อม</span>
 </header>
 
@@ -282,28 +304,27 @@
   <div>
 
     <div class="panel">
-      <h2>1 · โหลดไฟล์</h2>
+      <h2>1 · โหลดไฟล์ (ทุก media)</h2>
 
       <div class="drop" id="drop">
         <strong>คลิก · ลากวาง · หรือ Ctrl+V</strong>
-        <div>รองรับหลายไฟล์ — เลือกได้ทีละไฟล์</div>
+        <div>วิดีโอ · GIF · รูปภาพ — ตรวจด้วย magic bytes</div>
         <div class="formats">
+          <span class="fmt vid">.mp4</span>
+          <span class="fmt vid">.webm</span>
+          <span class="fmt vid">.mov</span>
+          <span class="fmt vid">.mkv</span>
+          <span class="fmt vid">.ogv</span>
+          <span class="fmt vid">.m4v</span>
           <span class="fmt">.gif</span>
           <span class="fmt">.png</span>
           <span class="fmt">.jpg</span>
-          <span class="fmt">.jpeg</span>
           <span class="fmt">.webp</span>
-          <span class="fmt">.bmp</span>
-          <span class="fmt">.avif</span>
         </div>
-        <div class="paste-hint">
-          หรือกด <kbd>Ctrl</kbd>+<kbd>V</kbd> เพื่อวางจากคลิปบอร์ด
-        </div>
+        <div class="paste-hint">หรือกด <kbd>Ctrl</kbd>+<kbd>V</kbd> วางจากคลิปบอร์ด</div>
       </div>
 
-      <!-- ★ ไม่มี accept — รับทุกไฟล์ แล้วตรวจเอง -->
       <input type="file" id="file" multiple hidden>
-      <input type="file" id="fileFallback" hidden>
 
       <div class="pending-list" id="pendingList"></div>
 
@@ -312,17 +333,72 @@
       </div>
     </div>
 
-    <div class="panel">
-      <h2>2 · จัดวางตาราง</h2>
+    <!-- Video settings -->
+    <div class="panel" id="panelVideo" style="display:none">
+      <h2>2 · ตั้งค่าวิดีโอ</h2>
       <div class="row">
         <div>
-          <label>Columns</label>
-          <input type="number" id="cols" value="8" min="1" max="64">
+          <label>ดึงเฟรมที่ FPS</label>
+          <input type="number" id="vidFps" value="12" min="1" max="60">
         </div>
         <div>
-          <label>Rows</label>
-          <input type="number" id="rows" value="8" min="1" max="64">
+          <label>จำกัดจำนวนเฟรม</label>
+          <input type="number" id="vidMax" value="128" min="8" max="512">
         </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>เริ่มที่ (วินาที)</label>
+          <input type="number" id="vidStartTime" value="0" min="0" step="0.1">
+        </div>
+        <div>
+          <label>ถึง (วินาที, 0=จบ)</label>
+          <input type="number" id="vidEndTime" value="0" min="0" step="0.1">
+        </div>
+      </div>
+      <div class="row one">
+        <label>ขนาดสูงสุด (px, ย่อเพื่อประหยัด)</label>
+        <select id="vidMaxDim">
+          <option value="0">ต้นฉบับ</option>
+          <option value="512">512 px</option>
+          <option value="384">384 px</option>
+          <option value="256" selected>256 px</option>
+          <option value="128">128 px</option>
+        </select>
+      </div>
+      <div class="btns">
+        <button id="btnExtract" class="primary">▶ ดึงเฟรม</button>
+        <button id="btnCancelExtract" class="danger" disabled>✕ ยกเลิก</button>
+      </div>
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="progress-text">
+          <span id="progressText">รอ…</span>
+          <span id="progressPct">0%</span>
+        </div>
+      </div>
+      <div class="hint" id="vidHint">—</div>
+    </div>
+
+    <!-- GIF settings -->
+    <div class="panel" id="panelGif" style="display:none">
+      <h2>2 · ตั้งค่า GIF</h2>
+      <div class="row">
+        <div><label>ใช้กี่เฟรม</label><input type="number" id="gifCount" value="0" min="1"></div>
+        <div><label>เริ่มที่เฟรม</label><input type="number" id="gifStart" value="0" min="0"></div>
+      </div>
+      <div class="row one">
+        <label class="check"><input type="checkbox" id="gifUseDelays" checked> ใช้ความเร็วจาก GIF</label>
+      </div>
+      <div class="hint" id="gifHint">—</div>
+    </div>
+
+    <!-- Grid layout -->
+    <div class="panel">
+      <h2>3 · จัดวางตาราง</h2>
+      <div class="row">
+        <div><label>Columns</label><input type="number" id="cols" value="8" min="1" max="64"></div>
+        <div><label>Rows</label><input type="number" id="rows" value="8" min="1" max="64"></div>
       </div>
       <div class="row one">
         <label>ลำดับการวาง</label>
@@ -334,25 +410,10 @@
       <div class="hint" id="packHint">—</div>
     </div>
 
-    <div class="panel" id="panelGif" style="display:none">
-      <h2>3 · ตั้งค่า GIF</h2>
-      <div class="row">
-        <div><label>ใช้กี่เฟรม</label><input type="number" id="gifCount" value="0" min="1"></div>
-        <div><label>เริ่มที่เฟรม</label><input type="number" id="gifStart" value="0" min="0"></div>
-      </div>
-      <div class="row one">
-        <label class="check"><input type="checkbox" id="gifUseDelays" checked> ใช้ความเร็วจาก GIF</label>
-      </div>
-      <div class="hint" id="gifHint">—</div>
-    </div>
-
     <div class="panel">
       <h2>4 · เล่นพรีวิว</h2>
       <div class="row">
-        <div>
-          <label>FPS</label>
-          <input type="number" id="fps" value="24" min="1" max="120">
-        </div>
+        <div><label>FPS</label><input type="number" id="fps" value="24" min="1" max="120"></div>
         <div>
           <label>Zoom</label>
           <select id="zoom">
@@ -423,9 +484,7 @@
 
     <div class="canvas-wrap">
       <div class="canvas-head">
-        <div class="canvas-title">
-          🖼️ เฟรมปัจจุบัน <span class="accent" id="curFrameTitle">#1</span>
-        </div>
+        <div class="canvas-title">🖼️ เฟรมปัจจุบัน <span class="accent" id="curFrameTitle">#1</span></div>
         <div class="canvas-meta"><b id="curFrameSize">—</b> · <span id="curFrameZoom">—</span></div>
       </div>
       <div class="canvas-box" style="min-height:200px">
@@ -440,19 +499,14 @@
 
     <div class="canvas-wrap">
       <div class="canvas-head">
-        <div class="canvas-title">
-          📦 Sprite Sheet <span class="accent">(ทุกเฟรมในภาพเดียว)</span>
-        </div>
-        <div class="canvas-meta">
-          <b id="sheetSize">—</b> · <span id="sheetDims">—</span>
-        </div>
+        <div class="canvas-title">📦 Sprite Sheet <span class="accent">(ทุกเฟรมในภาพเดียว)</span></div>
+        <div class="canvas-meta"><b id="sheetSize">—</b> · <span id="sheetDims">—</span></div>
       </div>
       <div class="canvas-box" style="max-height:560px">
         <canvas id="sheetCanvas" width="1" height="1"></canvas>
       </div>
       <div class="hint">
-        แต่ละช่อง = <b>1 เฟรม = ภาพย่อยจริง</b> — ไม่ใช่ภาพเดียวกันซ้ำ
-        Roblox เล่นด้วย <code>ImageRectOffset</code> ใน ImageLabel เดียว
+        แต่ละช่อง = <b>1 เฟรม = ภาพย่อยจริง</b> · Roblox เล่นด้วย <code>ImageRectOffset</code>
       </div>
     </div>
 
@@ -487,11 +541,14 @@
    STATE
    ============================================================ */
 const state = {
-  mode: "sheet",
-  img: null,
-  gifFrames: null,
-  gifDelays: null,
-  gifW: 0, gifH: 0,
+  sourceType: "none",      // "none" | "sheet" | "gif" | "video"
+  img: null,               // sheet only
+  animFrames: null,        // gif/video — [canvas]
+  animDelays: null,        // gif — [sec] ; video → null (ใช้ fps)
+  animW: 0, animH: 0,
+  videoDuration: 0,
+  videoFileName: "",
+
   cols: 8, rows: 8,
   count: 64, start: 0,
   order: "row",
@@ -500,32 +557,47 @@ const state = {
   playing: true,
   zoom: "auto",
   fileName: "",
-  pendingFiles: [],     // ★ คิวไฟล์ที่ drop/เลือกมา
+  pendingFiles: [],
   activeIndex: -1,
+  cancelExtract: false,
 };
 
 const els = {
-  drop:      document.getElementById("drop"),
-  file:      document.getElementById("file"),
-  fileFallback: document.getElementById("fileFallback"),
+  drop: document.getElementById("drop"),
+  file: document.getElementById("file"),
   pendingList: document.getElementById("pendingList"),
-  imgInfo:   document.getElementById("imgInfo"),
-  cols:      document.getElementById("cols"),
-  rows:      document.getElementById("rows"),
-  order:     document.getElementById("order"),
-  packHint:  document.getElementById("packHint"),
-  panelGif:  document.getElementById("panelGif"),
-  gifCount:  document.getElementById("gifCount"),
-  gifStart:  document.getElementById("gifStart"),
+  imgInfo: document.getElementById("imgInfo"),
+  panelVideo: document.getElementById("panelVideo"),
+  panelGif: document.getElementById("panelGif"),
+  vidFps: document.getElementById("vidFps"),
+  vidMax: document.getElementById("vidMax"),
+  vidStartTime: document.getElementById("vidStartTime"),
+  vidEndTime: document.getElementById("vidEndTime"),
+  vidMaxDim: document.getElementById("vidMaxDim"),
+  btnExtract: document.getElementById("btnExtract"),
+  btnCancelExtract: document.getElementById("btnCancelExtract"),
+  progressWrap: document.getElementById("progressWrap"),
+  progressBar: document.getElementById("progressBar"),
+  progressText: document.getElementById("progressText"),
+  progressPct: document.getElementById("progressPct"),
+  vidHint: document.getElementById("vidHint"),
+  gifCount: document.getElementById("gifCount"),
+  gifStart: document.getElementById("gifStart"),
   gifUseDelays: document.getElementById("gifUseDelays"),
-  gifHint:   document.getElementById("gifHint"),
-  gifBadge:  document.getElementById("gifBadge"),
+  gifHint: document.getElementById("gifHint"),
+  gifBadge: document.getElementById("gifBadge"),
   gifBadgeCount: document.getElementById("gifBadgeCount"),
+  vidBadge: document.getElementById("vidBadge"),
+  vidBadgeCount: document.getElementById("vidBadgeCount"),
   readyBadge: document.getElementById("readyBadge"),
-  fps:       document.getElementById("fps"),
-  zoom:      document.getElementById("zoom"),
-  scrub:     document.getElementById("scrub"),
-  frameNum:  document.getElementById("frameNum"),
+  cols: document.getElementById("cols"),
+  rows: document.getElementById("rows"),
+  order: document.getElementById("order"),
+  packHint: document.getElementById("packHint"),
+  fps: document.getElementById("fps"),
+  zoom: document.getElementById("zoom"),
+  scrub: document.getElementById("scrub"),
+  frameNum: document.getElementById("frameNum"),
   currentFrame: document.getElementById("currentFrame"),
   curFrameTitle: document.getElementById("curFrameTitle"),
   curFrameSize: document.getElementById("curFrameSize"),
@@ -537,149 +609,148 @@ const els = {
   stripCount: document.getElementById("stripCount"),
   stripVerify: document.getElementById("stripVerify"),
   frameList: document.getElementById("frameList"),
-  pillFps:   document.getElementById("pillFps"),
-  pillDur:   document.getElementById("pillDur"),
+  pillFps: document.getElementById("pillFps"),
+  pillDur: document.getElementById("pillDur"),
   pillFrame: document.getElementById("pillFrame"),
-  btnPlay:   document.getElementById("btnPlay"),
-  btnPrev:   document.getElementById("btnPrev"),
-  btnNext:   document.getElementById("btnNext"),
-  btnFirst:  document.getElementById("btnFirst"),
+  btnPlay: document.getElementById("btnPlay"),
+  btnPrev: document.getElementById("btnPrev"),
+  btnNext: document.getElementById("btnNext"),
+  btnFirst: document.getElementById("btnFirst"),
   exportFormat: document.getElementById("exportFormat"),
   jpgQuality: document.getElementById("jpgQuality"),
   showCellLabels: document.getElementById("showCellLabels"),
   showCellBorders: document.getElementById("showCellBorders"),
-  btnSheet:  document.getElementById("btnSheet"),
-  btnLua:    document.getElementById("btnLua"),
+  btnSheet: document.getElementById("btnSheet"),
+  btnLua: document.getElementById("btnLua"),
   btnPlayer: document.getElementById("btnPlayer"),
-  status:    document.getElementById("status"),
-  toast:     document.getElementById("toast"),
+  status: document.getElementById("status"),
+  toast: document.getElementById("toast"),
 };
 
 /* ============================================================
-   TOAST
+   TOAST / STATUS
    ============================================================ */
 let _toastTimer = null;
 function toast(msg, kind = "info", ms = 2500) {
   els.toast.textContent = msg;
   els.toast.className = "toast show " + kind;
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => {
-    els.toast.classList.remove("show");
-  }, ms);
+  _toastTimer = setTimeout(() => els.toast.classList.remove("show"), ms);
+}
+function setStatus(msg, kind) {
+  els.status.textContent = msg;
+  els.status.className = "status" + (kind ? " " + kind : "");
 }
 
 /* ============================================================
-   ★ FILE TYPE DETECTION — magic bytes + extension fallback
+   MAGIC BYTES — detect image / gif / video
    ============================================================ */
 const SIGNATURES = [
-  { name: "gif",   mime: "image/gif",   ext: ["gif"],
-    test: b => b[0]===0x47 && b[1]===0x49 && b[2]===0x46 && b[3]===0x38 }, // GIF8
-  { name: "png",   mime: "image/png",   ext: ["png"],
+  // ---- IMAGE ----
+  { kind: "gif", name: "gif", mime: "image/gif", ext: ["gif"],
+    test: b => b[0]===0x47 && b[1]===0x49 && b[2]===0x46 && b[3]===0x38 },
+  { kind: "image", name: "png", mime: "image/png", ext: ["png"],
     test: b => b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47 },
-  { name: "jpg",   mime: "image/jpeg",  ext: ["jpg","jpeg","jpe"],
+  { kind: "image", name: "jpg", mime: "image/jpeg", ext: ["jpg","jpeg","jpe"],
     test: b => b[0]===0xFF && b[1]===0xD8 && b[2]===0xFF },
-  { name: "webp",  mime: "image/webp",  ext: ["webp"],
+  { kind: "image", name: "webp", mime: "image/webp", ext: ["webp"],
     test: b => b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 &&
-               b[8]===0x57 && b[9]===0x45 && b[10]===0x42 && b[11]===0x50 }, // RIFF....WEBP
-  { name: "bmp",   mime: "image/bmp",   ext: ["bmp"],
+               b[8]===0x57 && b[9]===0x45 && b[10]===0x42 && b[11]===0x50 },
+  { kind: "image", name: "bmp", mime: "image/bmp", ext: ["bmp"],
     test: b => b[0]===0x42 && b[1]===0x4D },
-  { name: "avif",  mime: "image/avif",  ext: ["avif"],
+  { kind: "image", name: "avif", mime: "image/avif", ext: ["avif"],
     test: b => b.length>11 && b[4]===0x66 && b[5]===0x74 && b[6]===0x79 && b[7]===0x70 &&
                b[8]===0x61 && b[9]===0x76 && b[10]===0x69 && b[11]===0x66 },
-  { name: "ico",   mime: "image/x-icon", ext: ["ico"],
-    test: b => b[0]===0x00 && b[1]===0x00 && b[2]===0x01 && b[3]===0x00 },
+
+  // ---- VIDEO ----
+  { kind: "video", name: "mp4", mime: "video/mp4", ext: ["mp4","m4v","mov","3gp"],
+    test: b => b.length>=12 && b[4]===0x66 && b[5]===0x74 && b[6]===0x79 && b[7]===0x70 },
+  { kind: "video", name: "webm", mime: "video/webm", ext: ["webm","mkv"],
+    test: b => b[0]===0x1A && b[1]===0x45 && b[2]===0xDF && b[3]===0xA3 },
+  { kind: "video", name: "avi", mime: "video/x-msvideo", ext: ["avi"],
+    test: b => b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 &&
+               b[8]===0x41 && b[9]===0x56 && b[10]===0x49 && b[11]===0x20 },
+  { kind: "video", name: "ogv", mime: "video/ogg", ext: ["ogv","ogg"],
+    test: b => b[0]===0x4F && b[1]===0x67 && b[2]===0x67 && b[3]===0x53 },
+  { kind: "video", name: "flv", mime: "video/x-flv", ext: ["flv"],
+    test: b => b[0]===0x46 && b[1]===0x4C && b[2]===0x56 },
+  { kind: "video", name: "asf", mime: "video/x-ms-wmv", ext: ["wmv","asf"],
+    test: b => b[0]===0x30 && b[1]===0x26 && b[2]===0xB2 && b[3]===0x75 &&
+               b[4]===0x8E && b[5]===0x66 && b[6]===0xCF && b[7]===0x11 },
+  { kind: "video", name: "mpeg", mime: "video/mpeg", ext: ["mpg","mpeg"],
+    test: b => b[0]===0x00 && b[1]===0x00 && b[2]===0x01 && (b[3]===0xBA || b[3]===0xB3) },
 ];
 
-/** ตรวจไฟล์ → { name, mime, kind } หรือ null ถ้าไม่รู้จัก */
 async function detectFileType(file) {
-  // 1) อ่าน 16 bytes แรก
   let head = null;
   try {
-    const slice = file.slice(0, 16);
-    head = new Uint8Array(await slice.arrayBuffer());
-  } catch (e) {
-    // อ่านไม่ได้ (rare)
-  }
+    head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+  } catch (_) {}
 
-  // 2) ลอง magic bytes ก่อน
   if (head && head.length >= 4) {
     for (const sig of SIGNATURES) {
-      try {
-        if (sig.test(head)) {
-          return { name: sig.name, mime: sig.mime, kind: "image" };
-        }
-      } catch (e) { /* ข้าม */ }
+      try { if (sig.test(head)) return { kind: sig.kind, name: sig.name, mime: sig.mime }; }
+      catch (_) {}
     }
   }
 
-  // 3) fallback → MIME จาก browser
   const mime = (file.type || "").toLowerCase();
-  if (mime.startsWith("image/")) {
-    return { name: mime.split("/")[1] || "image", mime, kind: "image" };
-  }
+  if (mime.startsWith("video/")) return { kind: "video", name: mime.split("/")[1] || "video", mime };
+  if (mime === "image/gif") return { kind: "gif", name: "gif", mime };
+  if (mime.startsWith("image/")) return { kind: "image", name: mime.split("/")[1] || "image", mime };
 
-  // 4) fallback → นามสกุล
   const ext = (file.name.split(".").pop() || "").toLowerCase();
   for (const sig of SIGNATURES) {
-    if (sig.ext.includes(ext)) {
-      return { name: sig.name, mime: sig.mime, kind: "image" };
-    }
+    if (sig.ext.includes(ext)) return { kind: sig.kind, name: sig.name, mime: sig.mime };
   }
-
   return null;
 }
 
 /* ============================================================
    HELPERS
    ============================================================ */
-function setStatus(msg, kind) {
-  els.status.textContent = msg;
-  els.status.className = "status" + (kind ? " " + kind : "");
-}
-
 function formatBytes(n) {
   if (n < 1024) return n + " B";
   if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
   return (n / 1024 / 1024).toFixed(2) + " MB";
 }
-
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = (s % 60).toFixed(2);
+  return `${m}:${sec.padStart(5, "0")}`;
+}
 function indexToCell(i, cols, rows, order) {
   if (order === "col") return { c: Math.floor(i / rows), r: i % rows };
   return { c: i % cols, r: Math.floor(i / cols) };
 }
-
 function frameSize() {
-  if (state.mode === "gif" && state.gifFrames && state.gifFrames[0]) {
-    return { fw: state.gifFrames[0].width, fh: state.gifFrames[0].height };
+  if ((state.sourceType === "gif" || state.sourceType === "video") && state.animFrames && state.animFrames[0]) {
+    return { fw: state.animFrames[0].width, fh: state.animFrames[0].height };
   }
-  if (state.img) {
+  if (state.sourceType === "sheet" && state.img) {
     return {
-      fw: Math.max(1, Math.floor(state.img.width  / state.cols)),
+      fw: Math.max(1, Math.floor(state.img.width / state.cols)),
       fh: Math.max(1, Math.floor(state.img.height / state.rows)),
     };
   }
   return { fw: 1, fh: 1 };
 }
-
 function frameDuration(i) {
-  if (state.mode === "gif" && state.gifDelays && els.gifUseDelays.checked) {
-    const d = state.gifDelays[state.start + i];
+  if (state.sourceType === "gif" && state.animDelays && els.gifUseDelays.checked) {
+    const d = state.animDelays[state.start + i];
     return (d && d > 0.01) ? d : 0.1;
   }
   return 1 / state.fps;
 }
-
 function totalDuration() {
   let t = 0;
   for (let i = 0; i < state.count; i++) t += frameDuration(i);
   return t;
 }
-
 function averageFps() {
   const d = totalDuration();
   return d > 0 ? state.count / d : state.fps;
 }
-
 function makeCrisp(canvas, w, h) {
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext("2d", { alpha: true });
@@ -687,10 +758,8 @@ function makeCrisp(canvas, w, h) {
   ctx.mozImageSmoothingEnabled = false;
   ctx.webkitImageSmoothingEnabled = false;
   ctx.msImageSmoothingEnabled = false;
-  ctx.oImageSmoothingEnabled = false;
   return ctx;
 }
-
 function download(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -701,29 +770,26 @@ function download(blob, filename) {
 }
 
 /* ============================================================
-   FRAME EXTRACTION
+   FRAMES CACHE
    ============================================================ */
-let _frames = null;
-let _framesKey = "";
-
+let _frames = null, _framesKey = "";
 function getFrames() {
   const key = [
-    state.mode, state.cols, state.rows, state.count, state.start, state.order,
+    state.sourceType, state.cols, state.rows, state.count, state.start, state.order,
     state.img ? state.img.src : "g",
-    state.gifFrames ? state.gifFrames.length : 0,
+    state.animFrames ? state.animFrames.length : 0,
   ].join("|");
 
   if (_framesKey === key && _frames) return _frames;
-
   const out = [];
 
-  if (state.mode === "gif" && state.gifFrames) {
+  if ((state.sourceType === "gif" || state.sourceType === "video") && state.animFrames) {
     for (let i = 0; i < state.count; i++) {
-      const f = state.gifFrames[state.start + i];
+      const f = state.animFrames[state.start + i];
       if (!f) break;
       out.push(f);
     }
-  } else if (state.img) {
+  } else if (state.sourceType === "sheet" && state.img) {
     const { fw, fh } = frameSize();
     const total = state.cols * state.rows;
     for (let i = 0; i < state.count; i++) {
@@ -736,12 +802,11 @@ function getFrames() {
       out.push(cv);
     }
   }
-
-  _frames = out;
-  _framesKey = key;
+  _frames = out; _framesKey = key;
   return out;
 }
-
+let _sheetBase = null, _sheetBaseKey = "";
+let _frameHashes = null, _frameHashesKey = "";
 function invalidateCache() {
   _frames = null; _framesKey = "";
   _sheetBase = null; _sheetBaseKey = "";
@@ -751,33 +816,28 @@ function invalidateCache() {
 /* ============================================================
    HASH
    ============================================================ */
-function hashFrame(canvas, sampleStep = 4) {
+function hashFrame(canvas, step = 4) {
   const ctx = canvas.getContext("2d");
   const w = canvas.width, h = canvas.height;
   const data = ctx.getImageData(0, 0, w, h).data;
   let hash = 5381;
-  for (let y = 0; y < h; y += sampleStep) {
-    for (let x = 0; x < w; x += sampleStep) {
+  for (let y = 0; y < h; y += step)
+    for (let x = 0; x < w; x += step) {
       const i = (y * w + x) * 4;
       hash = ((hash << 5) + hash) ^ data[i];
       hash = ((hash << 5) + hash) ^ data[i + 1];
       hash = ((hash << 5) + hash) ^ data[i + 2];
       hash = ((hash << 5) + hash) ^ data[i + 3];
     }
-  }
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
 /* ============================================================
-   PENDING LIST UI
+   PENDING LIST
    ============================================================ */
 function renderPendingList() {
   const list = els.pendingList;
-  if (!state.pendingFiles.length) {
-    list.innerHTML = "";
-    return;
-  }
-
+  if (!state.pendingFiles.length) { list.innerHTML = ""; return; }
   list.innerHTML = "";
   state.pendingFiles.forEach((item, i) => {
     const row = document.createElement("div");
@@ -785,11 +845,15 @@ function renderPendingList() {
 
     const icon = document.createElement("span");
     icon.className = "icon";
-    icon.textContent = item.kind === "gif" ? "🎞️" : item.kind === "image" ? "🖼️" : "📄";
+    icon.textContent = item.kind === "video" ? "🎬" : item.kind === "gif" ? "🎞️" : "🖼️";
 
     const name = document.createElement("span");
     name.className = "name";
     name.textContent = item.file.name;
+
+    const kind = document.createElement("span");
+    kind.className = "kind " + item.kind;
+    kind.textContent = item.kind;
 
     const size = document.createElement("span");
     size.className = "size";
@@ -799,61 +863,41 @@ function renderPendingList() {
     btn.className = "load-btn";
     btn.textContent = i === state.activeIndex ? "✓" : "โหลด";
     btn.disabled = i === state.activeIndex;
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      loadPendingIndex(i);
-    });
+    btn.addEventListener("click", e => { e.stopPropagation(); loadPendingIndex(i); });
 
-    row.appendChild(icon);
-    row.appendChild(name);
-    row.appendChild(size);
-    row.appendChild(btn);
-    row.addEventListener("click", () => {
-      if (i !== state.activeIndex) loadPendingIndex(i);
-    });
-
+    row.append(icon, name, kind, size, btn);
+    row.addEventListener("click", () => { if (i !== state.activeIndex) loadPendingIndex(i); });
     list.appendChild(row);
   });
 }
 
 /* ============================================================
-   ★ MAIN: รับไฟล์ (drop / เลือก / paste)
+   HANDLE FILES
    ============================================================ */
 async function handleFiles(fileList) {
   const files = Array.from(fileList);
   if (!files.length) return;
 
   setStatus(`กำลังตรวจ ${files.length} ไฟล์…`, "loading");
-
-  // ตรวจทุกไฟล์
   const detected = [];
   for (const f of files) {
     const info = await detectFileType(f);
-    if (info) {
-      detected.push({ file: f, kind: info.name === "gif" ? "gif" : "image", info });
-    } else {
-      detected.push({ file: f, kind: "unknown", info: null });
-    }
+    if (info) detected.push({ file: f, kind: info.kind });
+    else detected.push({ file: f, kind: "unknown" });
   }
-
   const valid = detected.filter(d => d.kind !== "unknown");
   const invalid = detected.filter(d => d.kind === "unknown");
 
   if (!valid.length) {
-    setStatus(`ไม่พบไฟล์ที่รองรับ (${invalid.length} ไฟล์ไม่ใช่รูปภาพ)`, "err");
-    toast(`❌ ไม่พบไฟล์รูปภาพ — ${invalid.length} ไฟล์`, "err", 3500);
+    setStatus(`ไม่พบไฟล์ที่รองรับ (${invalid.length} ไฟล์)`, "err");
+    toast(`❌ ไม่พบไฟล์ที่รองรับ — ${invalid.length} ไฟล์`, "err", 3500);
     return;
   }
 
-  // เพิ่มเข้า pending
   state.pendingFiles = valid;
   renderPendingList();
 
-  if (invalid.length) {
-    toast(`⚠ ${invalid.length} ไฟล์ถูกข้าม (ไม่ใช่รูปภาพ)`, "info", 3000);
-  }
-
-  // โหลดไฟล์แรกทันที
+  if (invalid.length) toast(`⚠ ข้าม ${invalid.length} ไฟล์ (ไม่รู้จัก)`, "info", 3000);
   loadPendingIndex(0);
 }
 
@@ -861,97 +905,279 @@ async function loadPendingIndex(i) {
   if (i < 0 || i >= state.pendingFiles.length) return;
   state.activeIndex = i;
   renderPendingList();
-
   const item = state.pendingFiles[i];
-  if (item.kind === "gif") {
-    await loadGifFile(item.file);
-  } else {
-    await loadImageFile(item.file);
-  }
+
+  if (item.kind === "video") await loadVideoFile(item.file);
+  else if (item.kind === "gif") await loadGifFile(item.file);
+  else await loadImageFile(item.file);
 }
 
 /* ============================================================
-   ★ โหลด GIF (magic bytes ตรวจแล้วว่าเป็น GIF แน่)
+   LOAD: VIDEO — ★ โหลดวิดีโอเข้าองค์ประกอบ <video> แล้วรอ metadata
    ============================================================ */
-async function loadGifFile(file) {
-  setStatus(`กำลังถอดรหัส GIF "${file.name}" (${formatBytes(file.size)})…`, "loading");
+async function loadVideoFile(file) {
+  setStatus(`เตรียมวิดีโอ "${file.name}" (${formatBytes(file.size)})…`, "loading");
+
+  // reset UI
+  state.sourceType = "none";
+  state.animFrames = null;
+  invalidateCache();
+  els.panelVideo.style.display = "";
+  els.panelGif.style.display = "none";
+  els.vidBadge.classList.remove("show");
+  els.gifBadge.classList.remove("show");
+  els.progressWrap.classList.remove("show");
+  els.btnSheet.disabled = true;
+  els.btnLua.disabled = true;
+  els.btnPlayer.disabled = true;
+
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  video.src = url;
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "auto";
+  video.crossOrigin = "anonymous";
+
   try {
-    const gif = await decodeGif(file);
-    applyGif(file, gif);
-    toast(`✓ โหลด GIF แล้ว — ${gif.frames.length} เฟรม`, "ok", 2500);
+    await new Promise((res, rej) => {
+      const t = setTimeout(() => rej(new Error("หมดเวลาโหลด metadata (ไฟล์อาจไม่รองรับในเบราว์เซอร์นี้)")), 15000);
+      video.onloadedmetadata = () => { clearTimeout(t); res(); };
+      video.onerror = () => { clearTimeout(t); rej(new Error("เบราว์เซอร์เล่นวิดีโอนี้ไม่ได้ (codec ไม่รองรับ)")); };
+    });
   } catch (err) {
-    console.error(err);
-    setStatus(`ถอดรหัส GIF ไม่สำเร็จ: ${err.message}`, "err");
-    toast(`❌ GIF ผิดพลาด: ${err.message}`, "err", 4000);
+    URL.revokeObjectURL(url);
+    setStatus(`โหลดวิดีโอไม่ได้: ${err.message}`, "err");
+    toast(`❌ ${err.message}`, "err", 5000);
+    return;
   }
+
+  // ★ แก้ duration=Infinity (webm บางไฟล์)
+  if (!isFinite(video.duration) || video.duration === 0) {
+    await new Promise(res => {
+      const onUpdate = () => {
+        video.removeEventListener("timeupdate", onUpdate);
+        video.currentTime = 0;
+        res();
+      };
+      video.addEventListener("timeupdate", onUpdate);
+      video.currentTime = 1e101;
+    });
+  }
+
+  const duration = video.duration;
+  const W = video.videoWidth;
+  const H = video.videoHeight;
+
+  if (!W || !H || !duration || duration <= 0) {
+    URL.revokeObjectURL(url);
+    setStatus("วิดีโอผิดปกติ (ไม่มีภาพ หรือ duration=0)", "err");
+    return;
+  }
+
+  // เก็บ video ไว้ให้กด "ดึงเฟรม"
+  state.videoElement = video;
+  state.videoURL = url;
+  state.videoDuration = duration;
+  state.videoW = W;
+  state.videoH = H;
+  state.videoFileName = file.name;
+
+  els.vidStartTime.value = 0;
+  els.vidStartTime.max = duration.toFixed(2);
+  els.vidEndTime.value = 0;
+  els.vidEndTime.max = duration.toFixed(2);
+
+  // คำนวณจำนวนเฟรมตาม FPS ปัจจุบัน
+  updateVideoHint();
+
+  els.imgInfo.innerHTML =
+    `<b>${file.name}</b><br>${W} × ${H}px · ${formatTime(duration)} · ${file.type || "video"}`;
+
+  setStatus(
+    `พร้อม — ${W}×${H}px · ${formatTime(duration)} · กด "▶ ดึงเฟรม" เพื่อเริ่ม`,
+    "vid"
+  );
+  toast(`✓ โหลดวิดีโอแล้ว — ${formatTime(duration)}`, "ok", 2500);
+}
+
+function updateVideoHint() {
+  if (!state.videoDuration) { els.vidHint.textContent = "—"; return; }
+  const fps = Math.max(1, Math.min(60, +els.vidFps.value || 12));
+  const max = Math.max(8, Math.min(512, +els.vidMax.value || 128));
+  const startT = Math.max(0, +els.vidStartTime.value || 0);
+  let endT = +els.vidEndTime.value || 0;
+  if (endT <= 0 || endT > state.videoDuration) endT = state.videoDuration;
+  if (endT <= startT) endT = state.videoDuration;
+
+  const dur = endT - startT;
+  const ideal = Math.floor(dur * fps);
+  const actual = Math.min(ideal, max);
+
+  els.vidHint.innerHTML =
+    `ช่วง <b>${startT.toFixed(2)}s – ${endT.toFixed(2)}s</b> ` +
+    `(${dur.toFixed(2)}s) · ดึง <b>${actual}</b> เฟรม ` +
+    `(ideal ${ideal} · cap ${max})`;
 }
 
 /* ============================================================
-   ★ โหลดรูปนิ่ง
+   EXTRACT FRAMES FROM VIDEO
    ============================================================ */
-async function loadImageFile(file) {
-  setStatus(`กำลังโหลด "${file.name}" (${formatBytes(file.size)})…`, "loading");
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      applySheet(file, img);
-      toast(`✓ โหลดแล้ว — ${img.width}×${img.height}px`, "ok", 2000);
-      resolve();
+function seekTo(video, t, timeoutMs = 8000) {
+  return new Promise((res, rej) => {
+    const timeout = setTimeout(() => rej(new Error("seek timeout")), timeoutMs);
+    const onSeeked = () => {
+      clearTimeout(timeout);
+      video.removeEventListener("seeked", onSeeked);
+      res();
     };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      setStatus(`โหลดรูปไม่สำเร็จ: ${file.name} (ไฟล์อาจเสีย)`, "err");
-      toast(`❌ โหลดรูปไม่สำเร็จ — ไฟล์อาจเสีย`, "err", 3500);
-      resolve();
-    };
-    img.src = url;
+    video.addEventListener("seeked", onSeeked);
+    try { video.currentTime = t; }
+    catch (e) { clearTimeout(timeout); video.removeEventListener("seeked", onSeeked); rej(e); }
   });
 }
 
-/* ============================================================
-   APPLY
-   ============================================================ */
-function applySheet(file, img) {
-  state.mode = "sheet";
-  state.img = img;
-  state.gifFrames = null;
-  state.gifDelays = null;
+async function extractVideoFrames() {
+  const video = state.videoElement;
+  if (!video || !state.videoDuration) return;
+
+  const fps = Math.max(1, Math.min(60, +els.vidFps.value || 12));
+  const maxFrames = Math.max(8, Math.min(512, +els.vidMax.value || 128));
+  const startT = Math.max(0, +els.vidStartTime.value || 0);
+  let endT = +els.vidEndTime.value || 0;
+  if (endT <= 0 || endT > state.videoDuration) endT = state.videoDuration;
+  if (endT <= startT) endT = state.videoDuration;
+
+  const dur = endT - startT;
+  const idealCount = Math.max(1, Math.floor(dur * fps));
+  const frameCount = Math.min(idealCount, maxFrames);
+
+  // resize
+  const maxDim = +els.vidMaxDim.value || 0;
+  let outW = state.videoW, outH = state.videoH;
+  if (maxDim > 0 && Math.max(outW, outH) > maxDim) {
+    const scale = maxDim / Math.max(outW, outH);
+    outW = Math.max(1, Math.round(outW * scale));
+    outH = Math.max(1, Math.round(outH * scale));
+  }
+
+  state.cancelExtract = false;
+  els.btnExtract.disabled = true;
+  els.btnCancelExtract.disabled = false;
+  els.progressWrap.classList.add("show");
+  els.btnSheet.disabled = true;
+
+  const frames = [];
+  const t0 = performance.now();
+
+  try {
+    for (let i = 0; i < frameCount; i++) {
+      if (state.cancelExtract) throw new Error("ผู้ใช้ยกเลิก");
+
+      // ★ คำนวณ time ของเฟรมที่ i ให้กระจายสม่ำเสมอ
+      const t = startT + (i / Math.max(1, frameCount - 1)) * dur;
+      await seekTo(video, t);
+
+      const cv = document.createElement("canvas");
+      const ctx = makeCrisp(cv, outW, outH);
+      ctx.drawImage(video, 0, 0, outW, outH);
+      frames.push(cv);
+
+      // อัปเดต progress ทุก 2 เฟรม + เฟรมสุดท้าย
+      if (i % 2 === 0 || i === frameCount - 1) {
+        const pct = ((i + 1) / frameCount) * 100;
+        els.progressBar.style.width = pct + "%";
+        els.progressPct.textContent = pct.toFixed(0) + "%";
+        const elapsed = (performance.now() - t0) / 1000;
+        const eta = elapsed / (i + 1) * (frameCount - i - 1);
+        els.progressText.textContent =
+          `เฟรม ${i + 1}/${frameCount} · เหลือ ~${eta.toFixed(1)}s`;
+        // ให้ browser วาด progress ก่อน
+        if (i % 8 === 0) await new Promise(r => setTimeout(r, 0));
+      }
+    }
+
+    els.progressBar.style.width = "100%";
+    els.progressPct.textContent = "100%";
+    els.progressText.textContent = `เสร็จ — ${frames.length} เฟรม`;
+
+    applyVideo(state.videoFileName, frames, fps, outW, outH);
+    toast(`✓ ดึงเฟรมสำเร็จ — ${frames.length} เฟรม`, "ok", 3000);
+  } catch (err) {
+    console.error(err);
+    setStatus(`ดึงเฟรมล้มเหลว: ${err.message}`, "err");
+    toast(`❌ ${err.message}`, "err", 4000);
+  } finally {
+    els.btnExtract.disabled = false;
+    els.btnCancelExtract.disabled = true;
+    state.cancelExtract = false;
+  }
+}
+
+function applyVideo(fileName, frames, srcFps, W, H) {
+  state.sourceType = "video";
+  state.animFrames = frames;
+  state.animDelays = null;
+  state.animW = W;
+  state.animH = H;
+  state.img = null;
   state.idx = 0; state.acc = 0; state.start = 0;
-  state.fileName = file.name;
+  state.fileName = fileName;
   invalidateCache();
 
-  state.cols = 8; state.rows = 8;
-  els.cols.value = 8;
-  els.rows.value = 8;
-
-  els.gifBadge.classList.remove("show");
+  const n = frames.length;
+  els.vidBadge.classList.add("show");
+  els.vidBadgeCount.textContent = n;
+  els.panelVideo.style.display = "";
   els.panelGif.style.display = "none";
 
-  els.imgInfo.innerHTML = `<b>${file.name}</b><br>${img.width} × ${img.height} px · รูปนิ่ง`;
+  // ตั้ง FPS ให้ตรงกับที่ดึงมา
+  state.fps = Math.max(1, Math.min(120, srcFps));
+  els.fps.value = state.fps;
+
+  // auto grid
+  const g = computeAutoGrid(n);
+  state.cols = g.cols;
+  state.rows = g.rows;
+  els.cols.value = state.cols;
+  els.rows.value = state.rows;
+
+  els.imgInfo.innerHTML =
+    `<b>${fileName}</b><br>วิดีโอ → ${n} เฟรม · ${W}×${H}px`;
 
   recalc();
   els.btnSheet.disabled = false;
   els.btnLua.disabled = false;
   els.btnPlayer.disabled = false;
-
-  setStatus(
-    `โหลดแล้ว — ${img.width}×${img.height}px · ${state.cols}×${state.rows} = ${state.count} เฟรม`,
-    "ok"
-  );
+  setStatus(`วิดีโอ → ${n} เฟรม · grid ${state.cols}×${state.rows}`, "vid");
 
   drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
 }
 
+/* ============================================================
+   LOAD: GIF
+   ============================================================ */
+async function loadGifFile(file) {
+  setStatus(`ถอดรหัส GIF "${file.name}" (${formatBytes(file.size)})…`, "loading");
+  try {
+    const gif = await decodeGif(file);
+    applyGif(file, gif);
+    toast(`✓ GIF — ${gif.frames.length} เฟรม`, "ok", 2500);
+  } catch (err) {
+    console.error(err);
+    setStatus(`GIF ผิดพลาด: ${err.message}`, "err");
+    toast(`❌ ${err.message}`, "err", 4000);
+  }
+}
+
 function applyGif(file, gif) {
-  state.mode = "gif";
+  state.sourceType = "gif";
   state.img = null;
-  state.gifFrames = gif.frames;
-  state.gifDelays = gif.delays;
-  state.gifW = gif.width;
-  state.gifH = gif.height;
-  state.idx = 0; state.acc = 0;
+  state.animFrames = gif.frames;
+  state.animDelays = gif.delays;
+  state.animW = gif.width;
+  state.animH = gif.height;
+  state.idx = 0; state.acc = 0; state.start = 0;
   state.fileName = file.name;
   invalidateCache();
 
@@ -959,6 +1185,7 @@ function applyGif(file, gif) {
   els.gifBadge.classList.add("show");
   els.gifBadgeCount.textContent = n;
   els.panelGif.style.display = "";
+  els.panelVideo.style.display = "none";
 
   els.gifCount.value = n;
   els.gifCount.max = n;
@@ -979,60 +1206,109 @@ function applyGif(file, gif) {
   state.fps = Math.max(1, Math.min(120, avgFps || 24));
   els.fps.value = state.fps;
 
-  els.imgInfo.innerHTML = `<b>${file.name}</b><br>${gif.width} × ${gif.height} px · GIF ${n} เฟรม`;
+  els.imgInfo.innerHTML = `<b>${file.name}</b><br>${gif.width}×${gif.height}px · GIF ${n} เฟรม`;
 
   const avg = total > 0 ? (n / total) : 24;
   const { fw, fh } = frameSize();
   els.gifHint.innerHTML =
-    `ความยาว <b>${total.toFixed(2)}s</b> · FPS เฉลี่ย <b>${avg.toFixed(1)}</b> · ` +
-    `เฟรมละ <b>${fw}×${fh}px</b>`;
+    `${total.toFixed(2)}s · FPS เฉลี่ย <b>${avg.toFixed(1)}</b> · เฟรมละ ${fw}×${fh}px`;
 
   recalc();
   els.btnSheet.disabled = false;
   els.btnLua.disabled = false;
   els.btnPlayer.disabled = false;
-
-  setStatus(`โหลด GIF แล้ว — ${n} เฟรม · grid ${state.cols}×${state.rows}`, "gif");
+  setStatus(`GIF — ${n} เฟรม · grid ${state.cols}×${state.rows}`, "gif");
 
   drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
 }
 
+/* ============================================================
+   LOAD: IMAGE
+   ============================================================ */
+async function loadImageFile(file) {
+  setStatus(`โหลด "${file.name}" (${formatBytes(file.size)})…`, "loading");
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      applySheet(file, img);
+      toast(`✓ ${img.width}×${img.height}px`, "ok", 2000);
+      resolve();
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      setStatus(`โหลดรูปไม่สำเร็จ: ${file.name}`, "err");
+      toast(`❌ โหลดรูปไม่สำเร็จ`, "err", 3500);
+      resolve();
+    };
+    img.src = url;
+  });
+}
+
+function applySheet(file, img) {
+  state.sourceType = "sheet";
+  state.img = img;
+  state.animFrames = null;
+  state.animDelays = null;
+  state.idx = 0; state.acc = 0; state.start = 0;
+  state.fileName = file.name;
+  invalidateCache();
+
+  state.cols = 8; state.rows = 8;
+  els.cols.value = 8;
+  els.rows.value = 8;
+
+  els.gifBadge.classList.remove("show");
+  els.vidBadge.classList.remove("show");
+  els.panelGif.style.display = "none";
+  els.panelVideo.style.display = "none";
+
+  els.imgInfo.innerHTML = `<b>${file.name}</b><br>${img.width}×${img.height}px · รูปนิ่ง`;
+  recalc();
+  els.btnSheet.disabled = false;
+  els.btnLua.disabled = false;
+  els.btnPlayer.disabled = false;
+  setStatus(`${img.width}×${img.height}px · ${state.count} เฟรม`, "ok");
+
+  drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
+}
+
+/* ============================================================
+   AUTO GRID
+   ============================================================ */
 function computeAutoGrid(n) {
   let best = { cols: n, rows: 1, score: Infinity };
   for (let c = 1; c <= n; c++) {
     const r = Math.ceil(n / c);
     if (c * r < n) continue;
-    const aspect = c / r;
-    const waste = c * r - n;
-    const score = Math.abs(Math.log(aspect)) * 3 + waste * 0.5;
+    const score = Math.abs(Math.log(c / r)) * 3 + (c * r - n) * 0.5;
     if (score < best.score) best = { cols: c, rows: r, score };
   }
   return best;
 }
 
 /* ============================================================
-   RECALC / META
+   RECALC
    ============================================================ */
 function recalc() {
-  if (state.mode === "sheet") {
+  if (state.sourceType === "sheet") {
     state.count = state.cols * state.rows;
     state.start = 0;
-    state.idx = Math.min(Math.max(0, state.idx), state.count - 1);
-    els.scrub.max = Math.max(0, state.count - 1);
-    els.scrub.value = state.idx;
   } else {
-    const max = state.gifFrames ? state.gifFrames.length : 1;
+    const max = state.animFrames ? state.animFrames.length : 1;
     state.count = Math.min(Math.max(1, state.count), max);
     if (state.start + state.count > max) state.start = Math.max(0, max - state.count);
-    state.idx = Math.min(Math.max(0, state.idx), state.count - 1);
-
-    els.gifCount.value = state.count;
-    els.gifCount.max = max;
-    els.gifStart.value = state.start;
-    els.gifStart.max = Math.max(0, max - 1);
-    els.scrub.max = Math.max(0, state.count - 1);
-    els.scrub.value = state.idx;
+    if (state.sourceType === "gif") {
+      els.gifCount.value = state.count;
+      els.gifCount.max = max;
+      els.gifStart.value = state.start;
+      els.gifStart.max = Math.max(0, max - 1);
+    }
   }
+  state.idx = Math.min(Math.max(0, state.idx), state.count - 1);
+  els.scrub.max = Math.max(0, state.count - 1);
+  els.scrub.value = state.idx;
 
   invalidateCache();
   updatePackHint();
@@ -1047,35 +1323,30 @@ function updatePackHint() {
   const slots = state.cols * state.rows;
   const waste = slots - state.count;
 
-  let sizeMsg = (sheetW > 1024 || sheetH > 1024)
+  const sizeMsg = (sheetW > 1024 || sheetH > 1024)
     ? ` <span style="color:var(--warn)">⚠ เกิน 1024×1024</span>`
     : ` <span style="color:var(--ok)">✓ ขนาดแนะนำ</span>`;
-
   const wasteMsg = waste > 0
     ? ` <span style="color:var(--warn)">(เหลือ ${waste} ช่อง)</span>`
     : waste < 0
-      ? ` <span style="color:var(--err)">(ไม่พอ!)</span>`
-      : "";
+      ? ` <span style="color:var(--err)">(ไม่พอ!)</span>` : "";
 
   els.packHint.innerHTML =
     `Sheet <b>${sheetW}×${sheetH}px</b> · ` +
     `<b>${state.cols}×${state.rows}</b> = ${slots} ช่อง · ` +
     `<b>${state.count}</b> เฟรม${wasteMsg}${sizeMsg}`;
-
   els.sheetSize.textContent = `${sheetW} × ${sheetH} px`;
   els.sheetDims.textContent = `${state.cols} × ${state.rows} grid · ${state.count} เฟรม`;
 }
 
 function updateMeta() {
-  const playFps = (state.mode === "gif" && els.gifUseDelays.checked)
-    ? averageFps() : state.fps;
-  const dur = (state.mode === "gif" && els.gifUseDelays.checked)
-    ? totalDuration() : state.count / state.fps;
-
-  els.pillFps.textContent   = playFps.toFixed(1) + " fps";
-  els.pillDur.textContent   = dur.toFixed(2) + " s";
+  const isGif = state.sourceType === "gif";
+  const playFps = (isGif && els.gifUseDelays.checked) ? averageFps() : state.fps;
+  const dur = (isGif && els.gifUseDelays.checked) ? totalDuration() : state.count / state.fps;
+  els.pillFps.textContent = playFps.toFixed(1) + " fps";
+  els.pillDur.textContent = dur.toFixed(2) + " s";
   els.pillFrame.textContent = `frame ${state.idx + 1} / ${state.count}`;
-  els.frameNum.textContent  = String(state.idx + 1);
+  els.frameNum.textContent = String(state.idx + 1);
 }
 
 function updateReadyBadge() {
@@ -1085,13 +1356,12 @@ function updateReadyBadge() {
 }
 
 /* ============================================================
-   DRAW: เฟรมปัจจุบัน
+   DRAW
    ============================================================ */
 function drawCurrentFrame() {
   const cv = els.currentFrame;
   const frames = getFrames();
   if (!frames.length) return;
-
   const frame = frames[Math.min(state.idx, frames.length - 1)];
   if (!frame) return;
 
@@ -1102,7 +1372,6 @@ function drawCurrentFrame() {
     c0.imageSmoothingEnabled = false;
     c0.clearRect(0, 0, fw, fh);
   }
-
   const ctx = cv.getContext("2d");
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(frame, 0, 0);
@@ -1112,31 +1381,20 @@ function drawCurrentFrame() {
     const maxW = 500, maxH = 360;
     z = Math.floor(Math.min(maxW / fw, maxH / fh));
     if (z < 1) z = Math.min(maxW / fw, maxH / fh);
-  } else {
-    z = parseFloat(state.zoom);
-  }
+  } else z = parseFloat(state.zoom);
 
-  cv.style.width  = Math.round(fw * z) + "px";
+  cv.style.width = Math.round(fw * z) + "px";
   cv.style.height = Math.round(fh * z) + "px";
-
   els.curFrameTitle.textContent = "#" + (state.idx + 1);
-  els.curFrameSize.textContent  = `${fw} × ${fh} px`;
-  els.curFrameZoom.textContent  = "zoom " + (Number.isInteger(z) ? z + "×" : z.toFixed(2) + "×");
+  els.curFrameSize.textContent = `${fw} × ${fh} px`;
+  els.curFrameZoom.textContent = "zoom " + (Number.isInteger(z) ? z + "×" : z.toFixed(2) + "×");
 }
-
-/* ============================================================
-   DRAW: Sheet
-   ============================================================ */
-let _sheetBase = null;
-let _sheetBaseKey = "";
 
 function buildSheetBase(withLabels, withBorders) {
   const frames = getFrames();
   if (!frames.length) return null;
-
   const { fw, fh } = frameSize();
-  const sheetW = fw * state.cols;
-  const sheetH = fh * state.rows;
+  const sheetW = fw * state.cols, sheetH = fh * state.rows;
 
   const cv = document.createElement("canvas");
   const ctx = makeCrisp(cv, sheetW, sheetH);
@@ -1145,35 +1403,27 @@ function buildSheetBase(withLabels, withBorders) {
     const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
     ctx.drawImage(frames[i], c * fw, r * fh);
   }
-
   if (withBorders && fw >= 4 && fh >= 4) {
-    ctx.save();
-    ctx.lineWidth = 1;
+    ctx.save(); ctx.lineWidth = 1;
     for (let c = 0; c <= state.cols; c++) {
       const x = Math.round(c * fw) + 0.5;
-      ctx.strokeStyle = "rgba(0,0,0,0.55)";
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, sheetH); ctx.stroke();
-      ctx.strokeStyle = "rgba(255,255,255,0.25)";
-      ctx.beginPath(); ctx.moveTo(x + 1, 0); ctx.lineTo(x + 1, sheetH); ctx.stroke();
+      ctx.strokeStyle = "rgba(0,0,0,0.55)"; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, sheetH); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.beginPath(); ctx.moveTo(x + 1, 0); ctx.lineTo(x + 1, sheetH); ctx.stroke();
     }
     for (let r = 0; r <= state.rows; r++) {
       const y = Math.round(r * fh) + 0.5;
-      ctx.strokeStyle = "rgba(0,0,0,0.55)";
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(sheetW, y); ctx.stroke();
-      ctx.strokeStyle = "rgba(255,255,255,0.25)";
-      ctx.beginPath(); ctx.moveTo(0, y + 1); ctx.lineTo(sheetW, y + 1); ctx.stroke();
+      ctx.strokeStyle = "rgba(0,0,0,0.55)"; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(sheetW, y); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.beginPath(); ctx.moveTo(0, y + 1); ctx.lineTo(sheetW, y + 1); ctx.stroke();
     }
     ctx.restore();
   }
-
   if (withLabels && fw >= 20 && fh >= 20) {
     const fs = Math.max(10, Math.min(22, Math.floor(Math.min(fw, fh) / 3)));
     ctx.font = `bold ${fs}px ui-monospace,Consolas,monospace`;
     ctx.textBaseline = "top";
     for (let i = 0; i < frames.length; i++) {
       const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
-      const x = c * fw + 4;
-      const y = r * fh + 3;
+      const x = c * fw + 4, y = r * fh + 3;
       const label = String(i + 1);
       const w = ctx.measureText(label).width;
       ctx.fillStyle = "rgba(0,0,0,0.75)";
@@ -1182,7 +1432,6 @@ function buildSheetBase(withLabels, withBorders) {
       ctx.fillText(label, x, y);
     }
   }
-
   return cv;
 }
 
@@ -1190,24 +1439,18 @@ function drawSheet() {
   const cv = els.sheetCanvas;
   const frames = getFrames();
   if (!frames.length) return;
-
   const { fw, fh } = frameSize();
-  const sheetW = fw * state.cols;
-  const sheetH = fh * state.rows;
+  const sheetW = fw * state.cols, sheetH = fh * state.rows;
 
   const key = _framesKey + "|L=" + els.showCellLabels.checked + "|B=" + els.showCellBorders.checked;
   if (_sheetBaseKey !== key || !_sheetBase) {
     _sheetBase = buildSheetBase(els.showCellLabels.checked, els.showCellBorders.checked);
     _sheetBaseKey = key;
   }
-
   if (cv.width !== sheetW || cv.height !== sheetH) makeCrisp(cv, sheetW, sheetH);
   else {
-    const c0 = cv.getContext("2d");
-    c0.imageSmoothingEnabled = false;
-    c0.clearRect(0, 0, sheetW, sheetH);
+    const c0 = cv.getContext("2d"); c0.imageSmoothingEnabled = false; c0.clearRect(0, 0, sheetW, sheetH);
   }
-
   const ctx = cv.getContext("2d");
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(_sheetBase, 0, 0);
@@ -1221,7 +1464,7 @@ function drawSheet() {
   const maxW = 860, maxH = 540;
   let z = 1;
   if (sheetW > maxW || sheetH > maxH) z = Math.min(maxW / sheetW, maxH / sheetH);
-  cv.style.width  = Math.round(sheetW * z) + "px";
+  cv.style.width = Math.round(sheetW * z) + "px";
   cv.style.height = Math.round(sheetH * z) + "px";
 }
 
@@ -1229,14 +1472,11 @@ function drawSheetHighlightOnly() {
   const cv = els.sheetCanvas;
   if (!_sheetBase) return;
   const { fw, fh } = frameSize();
-  const sheetW = fw * state.cols;
-  const sheetH = fh * state.rows;
-
+  const sheetW = fw * state.cols, sheetH = fh * state.rows;
   const ctx = cv.getContext("2d");
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, sheetW, sheetH);
   ctx.drawImage(_sheetBase, 0, 0);
-
   const { c, r } = indexToCell(state.idx, state.cols, state.rows, state.order);
   const lw = Math.max(2, Math.round(Math.min(fw, fh) / 24));
   ctx.strokeStyle = "#f0883e";
@@ -1244,24 +1484,15 @@ function drawSheetHighlightOnly() {
   ctx.strokeRect(c * fw + lw / 2, r * fh + lw / 2, fw - lw, fh - lw);
 }
 
-/* ============================================================
-   DRAW: Filmstrip + Frame list
-   ============================================================ */
-let _frameHashes = null;
-let _frameHashesKey = "";
-
 function computeHashes(frames) {
   const key = _framesKey;
   if (_frameHashesKey === key && _frameHashes) return _frameHashes;
   const hashes = frames.map(f => hashFrame(f));
-  _frameHashes = hashes;
-  _frameHashesKey = key;
-
-  const unique = new Set(hashes).size;
-  const total = hashes.length;
-  els.stripVerify.innerHTML = (unique === total)
-    ? `<span style="color:var(--ok)">✓ ${total} เฟรมต่างกันทั้งหมด</span>`
-    : `<span style="color:var(--warn)">⚠ ${total} เฟรม · ${unique} แบบไม่ซ้ำ</span>`;
+  _frameHashes = hashes; _frameHashesKey = key;
+  const uniq = new Set(hashes).size, tot = hashes.length;
+  els.stripVerify.innerHTML = (uniq === tot)
+    ? `<span style="color:var(--ok)">✓ ${tot} เฟรมต่างกัน</span>`
+    : `<span style="color:var(--warn)">⚠ ${tot} เฟรม · ${uniq} แบบ</span>`;
   return hashes;
 }
 
@@ -1270,29 +1501,25 @@ function drawFilmstrip() {
   const frames = getFrames();
   if (!frames.length) {
     strip.innerHTML = '<div class="filmstrip-empty">โหลดไฟล์เพื่อดูตัวอย่าง</div>';
-    els.stripCount.textContent = "0";
-    return;
+    els.stripCount.textContent = "0"; return;
   }
-
   const { fw, fh } = frameSize();
   const thumbH = 56;
   const thumbW = Math.max(20, Math.round(fw * (thumbH / fh)));
-  const MAX_SHOW = 256;
-  const show = Math.min(frames.length, MAX_SHOW);
+  const show = Math.min(frames.length, 256);
 
   strip.innerHTML = "";
   for (let i = 0; i < show; i++) {
     const cv = document.createElement("canvas");
     const ctx = makeCrisp(cv, fw, fh);
     ctx.drawImage(frames[i], 0, 0);
-    cv.style.width  = thumbW + "px";
+    cv.style.width = thumbW + "px";
     cv.style.height = thumbH + "px";
     cv.title = `Frame ${i + 1}`;
     cv.dataset.idx = i;
     if (i === state.idx) cv.classList.add("active");
     cv.addEventListener("click", () => {
-      state.idx = i;
-      state.playing = false;
+      state.idx = i; state.playing = false;
       els.btnPlay.textContent = "▶ Play";
       els.scrub.value = i;
       drawCurrentFrame(); drawSheetHighlightOnly();
@@ -1317,12 +1544,9 @@ function drawFrameList() {
     list.innerHTML = '<div style="padding:12px; color:var(--dim); text-align:center; font-size:12px">ยังไม่มีเฟรม</div>';
     return;
   }
-
   const hashes = computeHashes(frames);
   const { fw, fh } = frameSize();
-  const MAX_SHOW = 200;
-  const show = Math.min(frames.length, MAX_SHOW);
-
+  const show = Math.min(frames.length, 200);
   let html = "";
   for (let i = 0; i < show; i++) {
     const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
@@ -1330,19 +1554,16 @@ function drawFrameList() {
     html += `<div class="frame-row${active}" data-idx="${i}">
       <span class="num">#${String(i + 1).padStart(3, "0")}</span>
       <span class="pos">(${c * fw}, ${r * fh})</span>
-      <span class="hash">${hashes[i]}</span>
-    </div>`;
+      <span class="hash">${hashes[i]}</span></div>`;
   }
-  if (frames.length > MAX_SHOW) {
-    html += `<div style="padding:8px; color:var(--dim); text-align:center; font-size:11px">… และอีก ${frames.length - MAX_SHOW} เฟรม</div>`;
+  if (frames.length > show) {
+    html += `<div style="padding:8px; color:var(--dim); text-align:center; font-size:11px">… และอีก ${frames.length - show} เฟรม</div>`;
   }
   list.innerHTML = html;
-
   list.querySelectorAll(".frame-row").forEach(row => {
     row.addEventListener("click", () => {
       const i = +row.dataset.idx;
-      state.idx = i;
-      state.playing = false;
+      state.idx = i; state.playing = false;
       els.btnPlay.textContent = "▶ Play";
       els.scrub.value = i;
       drawCurrentFrame(); drawSheetHighlightOnly();
@@ -1364,8 +1585,7 @@ let lastTime = performance.now();
 function tick(now) {
   const dt = Math.min(0.25, (now - lastTime) / 1000);
   lastTime = now;
-
-  if (state.playing && state.count > 1 && (state.img || state.gifFrames)) {
+  if (state.playing && state.count > 1 && state.sourceType !== "none") {
     state.acc += dt;
     let guard = 0, changed = false;
     while (guard++ < 240) {
@@ -1386,46 +1606,44 @@ function tick(now) {
 requestAnimationFrame(tick);
 
 /* ============================================================
-   GIF DECODER
+   GIF DECODER (LZW)
    ============================================================ */
 function lzwDecode(data, minCodeSize, pixelCount) {
-  const MAX_CODE = 4096;
-  const clearCode = 1 << minCodeSize;
-  const eoiCode = clearCode + 1;
+  const MAX = 4096;
+  const clear = 1 << minCodeSize;
+  const eoi = clear + 1;
   let codeSize = minCodeSize + 1;
-  let nextCode = eoiCode + 1;
-  const prefix = new Int32Array(MAX_CODE);
-  const suffix = new Uint8Array(MAX_CODE);
-  const stack  = new Uint8Array(MAX_CODE);
-  for (let i = 0; i < clearCode; i++) { prefix[i] = -1; suffix[i] = i; }
+  let next = eoi + 1;
+  const prefix = new Int32Array(MAX);
+  const suffix = new Uint8Array(MAX);
+  const stack = new Uint8Array(MAX);
+  for (let i = 0; i < clear; i++) { prefix[i] = -1; suffix[i] = i; }
   const out = new Uint8Array(pixelCount);
   let outPos = 0, bitPos = 0;
-
   function readCode() {
     let code = 0;
     for (let i = 0; i < codeSize; i++) {
-      const byteIdx = (bitPos + i) >> 3;
-      if (byteIdx >= data.length) return -1;
-      code |= ((data[byteIdx] >> ((bitPos + i) & 7)) & 1) << i;
+      const bi = (bitPos + i) >> 3;
+      if (bi >= data.length) return -1;
+      code |= ((data[bi] >> ((bitPos + i) & 7)) & 1) << i;
     }
     bitPos += codeSize;
     return code;
   }
-
   let oldCode = -1, firstChar = 0, stackTop = 0;
   while (outPos < pixelCount) {
     const code = readCode();
-    if (code === -1 || code === eoiCode) break;
-    if (code === clearCode) { codeSize = minCodeSize + 1; nextCode = eoiCode + 1; oldCode = -1; continue; }
+    if (code === -1 || code === eoi) break;
+    if (code === clear) { codeSize = minCodeSize + 1; next = eoi + 1; oldCode = -1; continue; }
     if (oldCode === -1) { out[outPos++] = suffix[code]; oldCode = code; firstChar = code; continue; }
     const inCode = code;
-    if (code >= nextCode) { stack[stackTop++] = firstChar; code = oldCode; }
-    while (code >= clearCode) { stack[stackTop++] = suffix[code]; code = prefix[code]; }
+    if (code >= next) { stack[stackTop++] = firstChar; code = oldCode; }
+    while (code >= clear) { stack[stackTop++] = suffix[code]; code = prefix[code]; }
     firstChar = suffix[code];
     stack[stackTop++] = firstChar;
-    if (nextCode < MAX_CODE) {
-      prefix[nextCode] = oldCode; suffix[nextCode] = firstChar; nextCode++;
-      if (nextCode === (1 << codeSize) && codeSize < 12) codeSize++;
+    if (next < MAX) {
+      prefix[next] = oldCode; suffix[next] = firstChar; next++;
+      if (next === (1 << codeSize) && codeSize < 12) codeSize++;
     }
     oldCode = inCode;
     while (stackTop > 0) {
@@ -1435,7 +1653,6 @@ function lzwDecode(data, minCodeSize, pixelCount) {
   }
   return out;
 }
-
 function deinterlace(pixels, w, h) {
   const out = new Uint8Array(w * h);
   const passes = [[0, 8], [4, 8], [2, 4], [1, 2]];
@@ -1448,22 +1665,20 @@ function deinterlace(pixels, w, h) {
   }
   return out;
 }
-
 function parseGif(buffer) {
   const bytes = new Uint8Array(buffer);
   const dv = new DataView(buffer);
   let p = 0;
   const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]);
-  if (sig !== "GIF87a" && sig !== "GIF89a") throw new Error("ไม่ใช่ไฟล์ GIF (signature ไม่ตรง)");
+  if (sig !== "GIF87a" && sig !== "GIF89a") throw new Error("ไม่ใช่ GIF");
   p = 6;
   const screenW = dv.getUint16(p, true); p += 2;
   const screenH = dv.getUint16(p, true); p += 2;
-  const packed  = bytes[p++]; p++; p++;
+  const packed = bytes[p++]; p++; p++;
   const gctFlag = !!(packed & 0x80);
   const gctSize = 2 << (packed & 0x07);
   let gct = null;
   if (gctFlag) { gct = bytes.subarray(p, p + gctSize * 3); p += gctSize * 3; }
-
   const screenBuf = new Uint8ClampedArray(screenW * screenH * 4);
   const frames = [], delays = [];
   let gce = null, prevDisposal = 0, prevRect = null, savedBuf = null;
@@ -1487,10 +1702,10 @@ function parseGif(buffer) {
     }
     if (marker === 0x2C) {
       const left = dv.getUint16(p, true); p += 2;
-      const top  = dv.getUint16(p, true); p += 2;
-      const w    = dv.getUint16(p, true); p += 2;
-      const h    = dv.getUint16(p, true); p += 2;
-      const ip   = bytes[p++];
+      const top = dv.getUint16(p, true); p += 2;
+      const w = dv.getUint16(p, true); p += 2;
+      const h = dv.getUint16(p, true); p += 2;
+      const ip = bytes[p++];
       const lctFlag = !!(ip & 0x80);
       const interlaced = !!(ip & 0x40);
       const lctSize = 2 << (ip & 0x07);
@@ -1498,17 +1713,12 @@ function parseGif(buffer) {
       if (lctFlag) { lct = bytes.subarray(p, p + lctSize * 3); p += lctSize * 3; }
       const ct = lct || gct;
       if (!ct) throw new Error("GIF ไม่มี color table");
-
       const minCodeSize = bytes[p++];
       const chunks = [];
-      while (p < bytes.length) {
-        const sz = bytes[p++]; if (sz === 0) break;
-        chunks.push(bytes.subarray(p, p + sz)); p += sz;
-      }
+      while (p < bytes.length) { const sz = bytes[p++]; if (sz === 0) break; chunks.push(bytes.subarray(p, p + sz)); p += sz; }
       let total = 0; for (const c of chunks) total += c.length;
       const lzwData = new Uint8Array(total);
       let off = 0; for (const c of chunks) { lzwData.set(c, off); off += c.length; }
-
       let pixels = lzwDecode(lzwData, minCodeSize, w * h);
       if (interlaced) pixels = deinterlace(pixels, w, h);
 
@@ -1516,25 +1726,22 @@ function parseGif(buffer) {
         for (let y = prevRect.top; y < prevRect.top + prevRect.h; y++)
           for (let x = prevRect.left; x < prevRect.left + prevRect.w; x++) {
             const i = (y * screenW + x) * 4;
-            screenBuf[i] = 0; screenBuf[i+1] = 0; screenBuf[i+2] = 0; screenBuf[i+3] = 0;
+            screenBuf[i] = 0; screenBuf[i + 1] = 0; screenBuf[i + 2] = 0; screenBuf[i + 3] = 0;
           }
       } else if (prevDisposal === 3 && savedBuf) screenBuf.set(savedBuf);
       if (gce && gce.disposal === 3) savedBuf = screenBuf.slice();
 
       const tIdx = gce ? gce.transparentIdx : -1;
       for (let y = 0; y < h; y++) {
-        const dstRow = (top + y) * screenW;
-        const srcRow = y * w;
+        const dr = (top + y) * screenW, sr = y * w;
         for (let x = 0; x < w; x++) {
-          const pi = pixels[srcRow + x];
+          const pi = pixels[sr + x];
           if (pi === tIdx) continue;
-          const sIdx = pi * 3;
-          const dIdx = (dstRow + (left + x)) * 4;
-          screenBuf[dIdx] = ct[sIdx]; screenBuf[dIdx+1] = ct[sIdx+1];
-          screenBuf[dIdx+2] = ct[sIdx+2]; screenBuf[dIdx+3] = 255;
+          const si = pi * 3, di = (dr + (left + x)) * 4;
+          screenBuf[di] = ct[si]; screenBuf[di + 1] = ct[si + 1];
+          screenBuf[di + 2] = ct[si + 2]; screenBuf[di + 3] = 255;
         }
       }
-
       const cv = document.createElement("canvas");
       cv.width = screenW; cv.height = screenH;
       cv.getContext("2d").putImageData(
@@ -1547,10 +1754,9 @@ function parseGif(buffer) {
       gce = null;
     }
   }
-  if (!frames.length) throw new Error("ไม่พบเฟรมใน GIF");
+  if (!frames.length) throw new Error("GIF ไม่มีเฟรม");
   return { frames, delays, width: screenW, height: screenH };
 }
-
 async function decodeGifWithImageDecoder(file) {
   const buf = await file.arrayBuffer();
   const decoder = new ImageDecoder({ data: buf, type: "image/gif" });
@@ -1558,8 +1764,7 @@ async function decodeGifWithImageDecoder(file) {
   await decoder.tracks.ready;
   const track = decoder.tracks.selectedTrack;
   const frameCount = track.frameCount;
-  if (frameCount < 2) throw new Error("GIF นี้ไม่มีแอนิเมชัน (มีแค่ 1 เฟรม)");
-
+  if (frameCount < 2) throw new Error("GIF มีแค่ 1 เฟรม");
   const frames = [], delays = [];
   let W = 0, H = 0;
   for (let i = 0; i < frameCount; i++) {
@@ -1574,20 +1779,16 @@ async function decodeGifWithImageDecoder(file) {
   }
   return { frames, delays, width: W, height: H };
 }
-
 async function decodeGif(file) {
   if ("ImageDecoder" in window) {
     try { return await decodeGifWithImageDecoder(file); }
-    catch (err) {
-      console.warn("ImageDecoder failed, falling back to manual LZW parser:", err);
-    }
+    catch (err) { console.warn("ImageDecoder failed:", err); }
   }
-  const buf = await file.arrayBuffer();
-  return parseGif(buf);
+  return parseGif(await file.arrayBuffer());
 }
 
 /* ============================================================
-   ZIP
+   ZIP WRITER
    ============================================================ */
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
@@ -1598,16 +1799,15 @@ const CRC_TABLE = (() => {
   }
   return t;
 })();
-
 function crc32(buf) {
   let crc = 0xFFFFFFFF;
   for (let i = 0; i < buf.length; i++) crc = CRC_TABLE[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
   return (crc ^ 0xFFFFFFFF) >>> 0;
 }
-
 function buildZip(files) {
   const enc = new TextEncoder();
-  const parts = []; const central = []; let offset = 0;
+  const parts = [], central = [];
+  let offset = 0;
   const now = new Date();
   const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
   const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
@@ -1656,9 +1856,7 @@ function buildZip(files) {
 function buildExportSheet() {
   const frames = getFrames();
   const { fw, fh } = frameSize();
-  const sheetW = fw * state.cols;
-  const sheetH = fh * state.rows;
-
+  const sheetW = fw * state.cols, sheetH = fh * state.rows;
   const cv = document.createElement("canvas");
   const ctx = makeCrisp(cv, sheetW, sheetH);
   for (let i = 0; i < frames.length; i++) {
@@ -1670,18 +1868,15 @@ function buildExportSheet() {
 
 function genLuaModule() {
   const { fw, fh } = frameSize();
-  const sheetW = fw * state.cols;
-  const sheetH = fh * state.rows;
-  const fps = state.mode === "gif"
+  const sheetW = fw * state.cols, sheetH = fh * state.rows;
+  const fps = state.sourceType === "gif"
     ? Math.max(1, Math.round(averageFps()))
     : state.fps;
-
-  return `-- Frames.lua | Sprite Sheet Module
--- ทุกเฟรมอยู่ในภาพเดียว เรียงเป็นตาราง ${state.cols}×${state.rows}
--- แต่ละช่อง = 1 เฟรม = ภาพย่อยจริง
+  return `-- Frames.lua | Sprite Sheet (${state.sourceType})
+-- ทุกเฟรมในภาพเดียว · ${state.cols}×${state.rows} grid · ${state.count} เฟรม
 
 return {
-\tSheetId    = "rbxassetid://0",  -- ★ ใส่ asset id
+\tSheetId    = "rbxassetid://0",
 \tSheetSize  = Vector2.new(${sheetW}, ${sheetH}),
 \tFrameSize  = Vector2.new(${fw}, ${fh}),
 \tColumns    = ${state.cols},
@@ -1695,15 +1890,12 @@ return {
 
 function genLuaPlayer() {
   const { fw, fh } = frameSize();
-  const sheetW = fw * state.cols;
-  const sheetH = fh * state.rows;
-  const fps = state.mode === "gif"
+  const sheetW = fw * state.cols, sheetH = fh * state.rows;
+  const fps = state.sourceType === "gif"
     ? Math.max(1, Math.round(averageFps()))
     : state.fps;
-
   return `-- VideoPlayer.lua | เล่น sprite sheet ด้วย ImageRectOffset
 local RunService = game:GetService("RunService")
-
 local VideoPlayer = {}
 VideoPlayer.__index = VideoPlayer
 
@@ -1711,7 +1903,6 @@ function VideoPlayer.new(config)
 \tlocal self = setmetatable({}, VideoPlayer)
 \tself.Target     = config.Target
 \tself.SheetId    = config.SheetId or "rbxassetid://0"
-\tself.SheetSize  = config.SheetSize or Vector2.new(${sheetW}, ${sheetH})
 \tself.FrameSize  = config.FrameSize or Vector2.new(${fw}, ${fh})
 \tself.Columns    = config.Columns or ${state.cols}
 \tself.Rows       = config.Rows or ${state.rows}
@@ -1734,7 +1925,7 @@ function VideoPlayer:_setup()
 \tself.Target.ImageRectSize = self.FrameSize
 \tif self.Target:IsA("ImageLabel") or self.Target:IsA("ImageButton") then
 \t\tself.Target.ResampleMode = Enum.ResamplerMode.Pixelated
-\t\tself.Target.ScaleType    = Enum.ScaleType.Stretch
+\t\tself.Target.ScaleType = Enum.ScaleType.Stretch
 \tend
 \tif self.Target:IsA("Decal") or self.Target:IsA("Texture") then
 \t\tself.Target.ResampleMode = Enum.ResamplerMode.Pixelated
@@ -1746,22 +1937,17 @@ function VideoPlayer:_applyFrame()
 \tlocal i = self.FrameIndex
 \tlocal col, row
 \tif self.Order == "col" then
-\t\tcol = math.floor(i / self.Rows)
-\t\trow = i % self.Rows
+\t\tcol = math.floor(i / self.Rows); row = i % self.Rows
 \telse
-\t\tcol = i % self.Columns
-\t\trow = math.floor(i / self.Columns)
+\t\tcol = i % self.Columns; row = math.floor(i / self.Columns)
 \tend
 \tself.Target.ImageRectOffset = Vector2.new(
-\t\tcol * self.FrameSize.X,
-\t\trow * self.FrameSize.Y
-\t)
+\t\tcol * self.FrameSize.X, row * self.FrameSize.Y)
 end
 
 function VideoPlayer:Play()
 \tif self.Playing then return end
-\tself.Playing = true
-\tself.Accum = 0
+\tself.Playing = true; self.Accum = 0
 \tself.Connection = RunService.RenderStepped:Connect(function(dt)
 \t\tself.Accum = self.Accum + dt * self.Fps
 \t\twhile self.Accum >= 1 do
@@ -1773,69 +1959,50 @@ end
 
 function VideoPlayer:Pause()
 \tself.Playing = false
-\tif self.Connection then
-\t\tself.Connection:Disconnect()
-\t\tself.Connection = nil
-\tend
+\tif self.Connection then self.Connection:Disconnect(); self.Connection = nil end
 end
 
 function VideoPlayer:Stop()
-\tself:Pause()
-\tself.FrameIndex = 0
-\tself:_applyFrame()
+\tself:Pause(); self.FrameIndex = 0; self:_applyFrame()
 end
 
 function VideoPlayer:SetFrame(i)
-\tself.FrameIndex = math.clamp(i, 0, self.FrameCount - 1)
-\tself:_applyFrame()
+\tself.FrameIndex = math.clamp(i, 0, self.FrameCount - 1); self:_applyFrame()
 end
 
-function VideoPlayer:SetFps(fps)
-\tself.Fps = math.max(1, fps)
-end
+function VideoPlayer:SetFps(fps) self.Fps = math.max(1, fps) end
 
 function VideoPlayer:_step()
 \tself.FrameIndex = self.FrameIndex + 1
 \tif self.FrameIndex >= self.FrameCount then
-\t\tif self.Loop then
-\t\t\tself.FrameIndex = 0
-\t\telse
-\t\t\tself.FrameIndex = self.FrameCount - 1
-\t\t\tself:Pause()
-\t\tend
+\t\tif self.Loop then self.FrameIndex = 0
+\t\telse self.FrameIndex = self.FrameCount - 1; self:Pause() end
 \tend
 \tself:_applyFrame()
 end
 
-function VideoPlayer:Destroy()
-\tself:Pause()
-end
+function VideoPlayer:Destroy() self:Pause() end
 
 return VideoPlayer`;
 }
 
 async function exportSheet() {
-  if (!state.img && !state.gifFrames) return;
+  if (state.sourceType === "none") return;
   els.btnSheet.disabled = true;
-  setStatus("กำลังแพ็ค sprite sheet…", "loading");
-
+  setStatus("แพ็ค sprite sheet…", "loading");
   try {
     const sheet = buildExportSheet();
     const fmt = els.exportFormat.value;
     const quality = Math.max(0.6, Math.min(1, (+els.jpgQuality.value || 98) / 100));
     const mime = fmt === "jpg" ? "image/jpeg" : "image/png";
-    const ext  = fmt === "jpg" ? "jpg" : "png";
-
+    const ext = fmt === "jpg" ? "jpg" : "png";
     const blob = await new Promise(res => sheet.toBlob(res, mime, quality));
     const sheetData = new Uint8Array(await blob.arrayBuffer());
-
     const enc = new TextEncoder();
     const { fw, fh } = frameSize();
-    const sheetW = fw * state.cols;
-    const sheetH = fh * state.rows;
-    const fps = state.mode === "gif"
-      ? Math.max(1, Math.round(averageFps()))
-      : state.fps;
+    const sheetW = fw * state.cols, sheetH = fh * state.rows;
+    const fps = state.sourceType === "gif"
+      ? Math.max(1, Math.round(averageFps())) : state.fps;
 
     const files = [
       { name: `sprite_sheet.${ext}`, data: sheetData },
@@ -1844,45 +2011,25 @@ async function exportSheet() {
       { name: "README.txt", data: enc.encode(
 `Sprite Sheet Export
 ===================
-ไฟล์: sprite_sheet.${ext}   ← ภาพเดียว มี ${state.count} เฟรม เรียงเป็นตาราง ${state.cols}×${state.rows}
-      Frames.lua          ← config
-      VideoPlayer.lua     ← player script
+Source: ${state.sourceType}
+Sheet: ${sheetW}×${sheetH}px · ${state.cols}×${state.rows} · ${state.count} เฟรม
+Frame: ${fw}×${fh}px · FPS: ${fps} · Format: ${fmt.toUpperCase()}
 
-ขนาดภาพรวม : ${sheetW} × ${sheetH} px
-ขนาด 1 เฟรม : ${fw} × ${fh} px
-ตาราง      : ${state.cols} × ${state.rows}
-จำนวนเฟรม  : ${state.count}
-FPS        : ${fps}
-รูปแบบ     : ${fmt.toUpperCase()}
-
-วิธีใช้
-1. อัปโหลด sprite_sheet.${ext} ขึ้น Roblox → ได้ asset id
+1. Upload sprite_sheet.${ext} → Roblox, copy asset id
 2. ใส่ asset id ใน Frames.lua
 3. วาง Frames.lua + VideoPlayer.lua ใน ReplicatedStorage
 4. ImageLabel + LocalScript:
-
-   local VideoPlayer = require(game.ReplicatedStorage.VideoPlayer)
-   local data = require(game.ReplicatedStorage.Frames)
-   local vp = VideoPlayer.new{
-       Target = script.Parent,
-       SheetId = data.SheetId,
-       SheetSize = data.SheetSize,
-       FrameSize = data.FrameSize,
-       Columns = data.Columns,
-       Rows = data.Rows,
-       FrameCount = data.FrameCount,
-       Order = data.Order,
-       Fps = data.Fps,
-   }
-`)
+   local vp = require(ReplicatedStorage.VideoPlayer).new{
+     Target = script.Parent,
+     SheetId = data.SheetId, FrameSize = data.FrameSize,
+     Columns = data.Columns, Rows = data.Rows,
+     FrameCount = data.FrameCount, Fps = data.Fps,
+   }`)
       },
     ];
-
-    const zip = buildZip(files);
-    download(zip, "roblox_sprite_sheet.zip");
-
+    download(buildZip(files), "roblox_sprite_sheet.zip");
     setStatus(`เสร็จ — ${sheetW}×${sheetH}px · ${state.count} เฟรม`, "ok");
-    toast(`✓ ดาวน์โหลดแล้ว — ${state.count} เฟรม`, "ok", 2500);
+    toast(`✓ ดาวน์โหลด — ${state.count} เฟรม`, "ok", 2500);
   } catch (err) {
     console.error(err);
     setStatus("ส่งออกล้มเหลว: " + err.message, "err");
@@ -1892,79 +2039,56 @@ FPS        : ${fps}
   }
 }
 
-function fallbackCopy(text) {
+function fallbackCopy(t) {
   const ta = document.createElement("textarea");
-  ta.value = text;
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand("copy");
-  ta.remove();
+  ta.value = t; document.body.appendChild(ta); ta.select();
+  document.execCommand("copy"); ta.remove();
 }
-
 async function copyLua() {
-  try {
-    await navigator.clipboard.writeText(genLuaModule());
-    toast("✓ คัดลอก Frames.lua", "ok");
-  } catch { fallbackCopy(genLuaModule()); toast("✓ คัดลอก Frames.lua", "ok"); }
+  try { await navigator.clipboard.writeText(genLuaModule()); toast("✓ Frames.lua", "ok"); }
+  catch { fallbackCopy(genLuaModule()); toast("✓ Frames.lua", "ok"); }
 }
 async function copyPlayer() {
-  try {
-    await navigator.clipboard.writeText(genLuaPlayer());
-    toast("✓ คัดลอก VideoPlayer.lua", "ok");
-  } catch { fallbackCopy(genLuaPlayer()); toast("✓ คัดลอก VideoPlayer.lua", "ok"); }
+  try { await navigator.clipboard.writeText(genLuaPlayer()); toast("✓ VideoPlayer.lua", "ok"); }
+  catch { fallbackCopy(genLuaPlayer()); toast("✓ VideoPlayer.lua", "ok"); }
 }
 
 /* ============================================================
-   ★ EVENTS
+   EVENTS
    ============================================================ */
 els.drop.addEventListener("click", () => els.file.click());
-
-// ★ ไม่มี accept — รับทุกไฟล์
 els.file.addEventListener("change", e => {
   if (e.target.files.length) handleFiles(e.target.files);
   e.target.value = "";
 });
 
-// Drag-drop
 let dragCounter = 0;
-["dragenter"].forEach(ev =>
-  els.drop.addEventListener(ev, e => {
-    e.preventDefault(); e.stopPropagation();
-    dragCounter++;
-    els.drop.classList.add("over");
-  })
-);
-["dragover"].forEach(ev =>
-  els.drop.addEventListener(ev, e => {
-    e.preventDefault(); e.stopPropagation();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
-  })
-);
-["dragleave"].forEach(ev =>
-  els.drop.addEventListener(ev, e => {
-    e.preventDefault(); e.stopPropagation();
-    dragCounter = Math.max(0, dragCounter - 1);
-    if (dragCounter === 0) els.drop.classList.remove("over");
-  })
-);
+["dragenter"].forEach(ev => els.drop.addEventListener(ev, e => {
+  e.preventDefault(); e.stopPropagation();
+  dragCounter++; els.drop.classList.add("over");
+}));
+els.drop.addEventListener("dragover", e => {
+  e.preventDefault(); e.stopPropagation();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+});
+els.drop.addEventListener("dragleave", e => {
+  e.preventDefault(); e.stopPropagation();
+  dragCounter = Math.max(0, dragCounter - 1);
+  if (dragCounter === 0) els.drop.classList.remove("over");
+});
 els.drop.addEventListener("drop", e => {
   e.preventDefault(); e.stopPropagation();
   dragCounter = 0;
   els.drop.classList.remove("over");
   const files = e.dataTransfer && e.dataTransfer.files;
   if (files && files.length) handleFiles(files);
-  else toast("⚠ ไม่พบไฟล์ในลาก", "err", 2000);
 });
-
-// ป้องกันทั้งหน้า
 window.addEventListener("dragover", e => e.preventDefault());
 window.addEventListener("drop", e => e.preventDefault());
 
-// ★ Paste from clipboard
 window.addEventListener("paste", async e => {
   const items = e.clipboardData && e.clipboardData.items;
   if (!items) return;
-
   const files = [];
   for (const it of items) {
     if (it.kind === "file") {
@@ -1974,12 +2098,34 @@ window.addEventListener("paste", async e => {
   }
   if (files.length) {
     e.preventDefault();
-    toast(`📋 วาง ${files.length} ไฟล์จากคลิปบอร์ด`, "info", 2000);
+    toast(`📋 วาง ${files.length} ไฟล์`, "info", 2000);
     handleFiles(files);
   }
 });
 
-// Controls
+/* Video controls */
+els.vidFps.addEventListener("input", updateVideoHint);
+els.vidMax.addEventListener("input", updateVideoHint);
+els.vidStartTime.addEventListener("input", updateVideoHint);
+els.vidEndTime.addEventListener("input", updateVideoHint);
+els.btnExtract.addEventListener("click", extractVideoFrames);
+els.btnCancelExtract.addEventListener("click", () => {
+  state.cancelExtract = true;
+  toast("กำลังยกเลิก…", "info", 1500);
+});
+
+/* GIF controls */
+els.gifCount.addEventListener("input", () => {
+  state.count = Math.max(1, +els.gifCount.value || 1);
+  recalc(); drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
+});
+els.gifStart.addEventListener("input", () => {
+  state.start = Math.max(0, +els.gifStart.value || 0);
+  recalc(); drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
+});
+els.gifUseDelays.addEventListener("change", () => { state.acc = 0; updateMeta(); });
+
+/* Grid */
 els.cols.addEventListener("input", () => {
   state.cols = Math.max(1, Math.min(64, +els.cols.value || 1));
   recalc(); drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
@@ -1993,15 +2139,8 @@ els.order.addEventListener("change", () => {
   invalidateCache();
   drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
 });
-els.gifCount.addEventListener("input", () => {
-  state.count = Math.max(1, +els.gifCount.value || 1);
-  recalc(); drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
-});
-els.gifStart.addEventListener("input", () => {
-  state.start = Math.max(0, +els.gifStart.value || 0);
-  recalc(); drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
-});
-els.gifUseDelays.addEventListener("change", () => { state.acc = 0; updateMeta(); });
+
+/* Preview */
 els.fps.addEventListener("input", () => {
   state.fps = Math.max(1, Math.min(120, +els.fps.value || 24));
   updateMeta();
@@ -2011,17 +2150,14 @@ els.zoom.addEventListener("change", () => {
   drawCurrentFrame();
 });
 els.showCellLabels.addEventListener("change", () => {
-  _sheetBase = null; _sheetBaseKey = "";
-  drawSheet();
+  _sheetBase = null; _sheetBaseKey = ""; drawSheet();
 });
 els.showCellBorders.addEventListener("change", () => {
-  _sheetBase = null; _sheetBaseKey = "";
-  drawSheet();
+  _sheetBase = null; _sheetBaseKey = ""; drawSheet();
 });
 els.scrub.addEventListener("input", () => {
   state.idx = +els.scrub.value;
-  state.acc = 0;
-  state.playing = false;
+  state.acc = 0; state.playing = false;
   els.btnPlay.textContent = "▶ Play";
   drawCurrentFrame(); drawSheetHighlightOnly();
   updateFilmstripActive(); updateFrameListActive(); updateMeta();
@@ -2062,7 +2198,7 @@ document.addEventListener("keydown", e => {
   if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
   if (e.code === "Space") { e.preventDefault(); els.btnPlay.click(); }
   if (e.code === "ArrowRight") els.btnNext.click();
-  if (e.code === "ArrowLeft")  els.btnPrev.click();
+  if (e.code === "ArrowLeft") els.btnPrev.click();
 });
 
 els.btnPlay.textContent = "⏸ Pause";
