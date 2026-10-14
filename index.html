@@ -2,920 +2,1513 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>✦ Diana Shop ✦</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GIF / Sheet → Single Sprite Sheet + Roblox ImageRectOffset Player</title>
 <style>
-/* ── RESET & ROOT ─────────────────────────────────── */
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior:smooth; }
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c2430; --line:#2a3441;
+    --fg:#e6edf3; --dim:#8b98a5; --accent:#58a6ff; --accent2:#f0883e;
+    --ok:#3fb950; --err:#f85149; --gif:#a371f7; --warn:#d29922;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:"Segoe UI",system-ui,-apple-system,"Noto Sans Thai",sans-serif;
+    font-size:14px; line-height:1.5;
+  }
+  header{
+    padding:18px 22px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+    background:linear-gradient(180deg,#161b22,#0e1116);
+  }
+  header h1{margin:0; font-size:17px; letter-spacing:.2px}
+  header .sub{color:var(--dim); font-size:12.5px}
+  .app{
+    display:grid; grid-template-columns:360px minmax(0,1fr);
+    gap:16px; padding:16px; max-width:1500px; margin:0 auto; align-items:start;
+  }
+  @media(max-width:900px){ .app{grid-template-columns:1fr} }
 
-:root {
-  --bg:        #eef5ff;
-  --bg2:       #e4efff;
-  --card:      rgba(255,255,255,0.78);
-  --glass:     rgba(255,255,255,0.55);
-  --border:    rgba(180,215,255,0.6);
-  --border2:   rgba(180,215,255,0.9);
-  --sky:       #a8d4ff;
-  --blue:      #60a8f0;
-  --bluedeep:  #3d84d4;
-  --cream:     #fffcf5;
-  --pink:      #ffb8d4;
-  --text:      #365880;
-  --textmid:   #6b90b8;
-  --textlight: #a0bdd8;
-  --nor-c:     #3aaa6a;  --nor-bg:     #e6faf2; --nor-br:  #82d4aa;
-  --sale-c:    #c09000;  --sale-bg:    #fffbe6; --sale-br: #f0c830;
-  --off-c:     #cc4444;  --off-bg:     #fff0f0; --off-br:  #f0a0a0;
-  --r:18px; --r-sm:12px; --r-xs:8px;
-  --sh: 0 6px 30px rgba(80,150,230,0.12);
-  --sh2: 0 12px 50px rgba(80,150,230,0.22);
-}
+  .panel{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:14px;
+  }
+  .panel + .panel{margin-top:14px}
+  .panel h2{
+    margin:0 0 12px; font-size:12px; text-transform:uppercase;
+    letter-spacing:.9px; color:var(--dim); font-weight:600;
+  }
+  .drop{
+    border:2px dashed var(--line); border-radius:10px; padding:26px 14px;
+    text-align:center; color:var(--dim); cursor:pointer;
+    transition:.15s; background:var(--panel2);
+  }
+  .drop:hover,.drop.over{border-color:var(--accent); color:var(--fg); background:#1b2531}
+  .drop strong{color:var(--accent); display:block; margin-bottom:4px; font-size:14px}
 
-body {
-  font-family:'Mitr', sans-serif;
-  font-weight:400;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  overflow-x:hidden;
-  cursor:default;
-}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px}
+  .row.one{grid-template-columns:1fr}
+  label{display:block; font-size:11.5px; color:var(--dim); margin-bottom:4px; letter-spacing:.3px}
+  input[type=number],input[type=text],select{
+    width:100%; padding:7px 9px; background:var(--panel2); color:var(--fg);
+    border:1px solid var(--line); border-radius:6px; font-size:13px; font-family:inherit;
+  }
+  input:focus,select:focus{outline:none; border-color:var(--accent)}
+  input[type=range]{width:100%; accent-color:var(--accent)}
+  .check{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--fg); cursor:pointer}
+  .check input{accent-color:var(--accent)}
 
-/* ── CUSTOM CURSOR ───────────────────────────────── */
-.cursor-star {
-  position:fixed; pointer-events:none; z-index:9999;
-  width:18px; height:18px;
-  transform:translate(-50%,-50%);
-  opacity:0; transition:opacity 0.2s;
-  font-size:14px; line-height:1;
-  animation:cursorSpin 4s linear infinite;
-}
-@keyframes cursorSpin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
+  button{
+    padding:8px 12px; border-radius:6px; border:1px solid var(--line);
+    background:var(--panel2); color:var(--fg); cursor:pointer;
+    font-size:12.5px; font-family:inherit; font-weight:500; transition:.12s;
+  }
+  button:hover:not(:disabled){background:#243040; border-color:#3a4a5e}
+  button:disabled{opacity:.4; cursor:not-allowed}
+  button.primary{background:#1f6feb; border-color:#1f6feb; color:#fff}
+  button.primary:hover:not(:disabled){background:#2d7ff9; border-color:#2d7ff9}
+  button.ok{background:#238636; border-color:#238636; color:#fff}
+  button.ok:hover:not(:disabled){background:#2ea043}
+  .btns{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .btns.full{grid-template-columns:1fr}
 
-/* ── BG BLOBS ─────────────────────────────────────── */
-.blobs { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
-.blob {
-  position:absolute; border-radius:50%;
-  filter:blur(60px); opacity:0.35;
-  animation:blobDrift var(--bd,20s) ease-in-out infinite alternate;
-}
-.blob1{ width:500px;height:500px;background:#b8d8ff;top:-120px;left:-100px;--bd:18s; }
-.blob2{ width:420px;height:420px;background:#ffd6ec;top:40%;right:-80px;--bd:22s;animation-delay:-6s; }
-.blob3{ width:360px;height:360px;background:#d0f0ff;bottom:-80px;left:30%;--bd:16s;animation-delay:-3s; }
-.blob4{ width:280px;height:280px;background:#fff0d0;top:60%;left:10%;--bd:24s;animation-delay:-9s; }
-@keyframes blobDrift{
-  from{ transform:translate(0,0) scale(1); }
-  to  { transform:translate(40px,30px) scale(1.08); }
-}
+  .stage{display:flex; flex-direction:column; gap:14px}
+  .canvas-wrap{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:14px; display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .canvas-box{
+    display:flex; align-items:center; justify-content:center;
+    width:100%; min-height:120px; overflow:auto; padding:4px;
+  }
+  canvas{
+    display:block; border-radius:4px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    image-rendering: -moz-crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;
+    background:
+      repeating-conic-gradient(#1b2027 0% 25%, #222933 0% 50%) 50%/18px 18px;
+  }
+  #sheetCanvas{border:1px solid var(--line)}
+  #preview{border:1px solid var(--line)}
+  .meta{font-size:12px; color:var(--dim); text-align:center; font-variant-numeric:tabular-nums}
+  .meta b{color:var(--fg); font-weight:600}
 
-/* ── FLOATING PARTICLES ───────────────────────────── */
-.particles{ position:fixed; inset:0; z-index:0; pointer-events:none; }
-.particle {
-  position:absolute;
-  font-size:var(--ps,12px);
-  opacity:0;
-  animation:particleFloat var(--pd,10s) ease-in-out var(--pdelay,0s) infinite;
-}
-@keyframes particleFloat{
-  0%  { opacity:0; transform:translateY(10px) rotate(0deg) scale(0.6); }
-  15% { opacity:0.7; }
-  85% { opacity:0.4; }
-  100%{ opacity:0; transform:translateY(-90px) rotate(180deg) scale(1.1); }
-}
+  .bar{display:flex; align-items:center; gap:10px; width:100%; flex-wrap:wrap; justify-content:center}
+  .pill{
+    font-size:11px; padding:2px 8px; border-radius:20px;
+    background:var(--panel2); border:1px solid var(--line); color:var(--dim);
+  }
+  .pill.ok{color:var(--ok); border-color:#1f4a2b}
+  .pill.gif{color:var(--gif); border-color:#4a3070; background:#1a1430}
+  .pill.warn{color:var(--warn); border-color:#5c4500; background:#2a2000}
+  .status{
+    font-size:12px; color:var(--dim); min-height:18px;
+    padding:8px 10px; border-radius:6px; background:var(--panel2);
+    border:1px solid var(--line); word-break:break-word;
+  }
+  .status.ok{color:var(--ok)} .status.err{color:var(--err)}
+  .status.gif{color:var(--gif)} .status.warn{color:var(--warn)}
+  code{
+    background:#0d1117; padding:1px 5px; border-radius:4px;
+    font-family:ui-monospace,Consolas,monospace; font-size:12px; color:var(--accent);
+  }
+  .hint{font-size:11.5px; color:var(--dim); line-height:1.65}
+  .hint b{color:var(--fg)}
+  .badge{
+    display:none; align-items:center; gap:6px;
+    font-size:11px; padding:3px 9px; border-radius:20px;
+  }
+  .badge.show{display:inline-flex}
+  .badge.gif{background:#1a1430; border:1px solid #4a3070; color:var(--gif)}
+  .badge.ok{background:#0e2a17; border:1px solid #1f4a2b; color:var(--ok)}
+  .badge.warn{background:#2a2000; border:1px solid #5c4500; color:var(--warn)}
+  .gif-badge::before,.sharp-badge::before{content:"●"; font-size:8px}
 
-/* ── WRAP ─────────────────────────────────────────── */
-.wrap { position:relative; z-index:1; max-width:1120px; margin:0 auto; padding:0 24px; }
-
-/* ── HEADER ───────────────────────────────────────── */
-header {
-  text-align:center;
-  padding:64px 20px 36px;
-  position:relative;
-}
-.hd-ribbon {
-  display:inline-flex; align-items:center; gap:8px;
-  background:rgba(255,255,255,0.7);
-  border:1.5px solid var(--border2);
-  backdrop-filter:blur(12px);
-  border-radius:999px;
-  padding:6px 20px 6px 14px;
-  font-size:0.72rem;
-  font-family:'Comfortaa', sans-serif;
-  font-weight:700;
-  letter-spacing:0.14em;
-  color:var(--bluedeep);
-  text-transform:uppercase;
-  margin-bottom:20px;
-  animation:popIn 0.7s cubic-bezier(.34,1.56,.64,1) both;
-}
-.hd-ribbon-dot {
-  width:7px; height:7px; border-radius:50%;
-  background:var(--blue);
-  animation:pulseDot 2s ease-in-out infinite;
-}
-@keyframes pulseDot{ 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.5);opacity:0.5;} }
-
-.site-title {
-  font-family:'Comfortaa', sans-serif;
-  font-size:clamp(2.2rem,6vw,3.8rem);
-  font-weight:700;
-  color:var(--bluedeep);
-  line-height:1.1;
-  letter-spacing:-0.01em;
-  animation:popIn 0.75s cubic-bezier(.34,1.56,.64,1) 0.1s both;
-}
-.site-title .accent { 
-  background:linear-gradient(135deg,var(--blue),#7ec8ff);
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  background-clip:text;
-}
-.site-tagline {
-  font-family:'Mitr', sans-serif;
-  font-weight:300;
-  font-size:1rem;
-  color:var(--textmid);
-  margin-top:10px;
-  animation:popIn 0.75s cubic-bezier(.34,1.56,.64,1) 0.2s both;
-}
-.hd-deco {
-  display:flex; justify-content:center; align-items:center; gap:10px;
-  margin-top:22px;
-  animation:popIn 0.75s cubic-bezier(.34,1.56,.64,1) 0.3s both;
-}
-.hd-pill {
-  height:4px; width:32px; border-radius:99px;
-  background:linear-gradient(90deg,var(--sky),var(--blue));
-  animation:pillPulse 2s ease-in-out infinite;
-}
-.hd-pill:nth-child(2){ width:52px; animation-delay:0.15s; }
-.hd-pill:nth-child(3){ width:32px; animation-delay:0.3s; }
-@keyframes pillPulse{ 0%,100%{opacity:0.5;transform:scaleX(1);} 50%{opacity:1;transform:scaleX(1.1);} }
-
-@keyframes popIn{
-  from{opacity:0;transform:translateY(16px) scale(0.95);}
-  to{opacity:1;transform:translateY(0) scale(1);}
-}
-
-/* ── TABS ─────────────────────────────────────────── */
-.tabs-wrapper {
-  position:sticky; top:0; z-index:100;
-  padding:14px 0 4px;
-  background:linear-gradient(to bottom,var(--bg) 75%,transparent);
-}
-.tabs-track {
-  display:flex; justify-content:center;
-  background:rgba(255,255,255,0.65);
-  backdrop-filter:blur(16px);
-  border:1.5px solid var(--border2);
-  border-radius:999px;
-  padding:5px;
-  gap:4px;
-  max-width:520px; margin:0 auto;
-  box-shadow: 0 4px 24px rgba(80,150,230,0.1);
-}
-.tab-btn {
-  flex:1;
-  font-family:'Mitr', sans-serif;
-  font-weight:500;
-  font-size:0.85rem;
-  letter-spacing:0.04em;
-  padding:10px 18px;
-  border:none; border-radius:999px;
-  background:transparent;
-  color:var(--textmid);
-  cursor:pointer;
-  transition:all 0.3s cubic-bezier(.34,1.56,.64,1);
-  display:flex; align-items:center; justify-content:center; gap:6px;
-  white-space:nowrap;
-  position:relative;
-  overflow:hidden;
-}
-.tab-btn:hover { color:var(--bluedeep); background:rgba(160,200,255,0.15); }
-.tab-btn.active {
-  background:linear-gradient(135deg,var(--blue),var(--bluedeep));
-  color:#fff;
-  box-shadow:0 4px 18px rgba(60,130,210,0.38);
-  font-weight:600;
-}
-.tab-btn .ti { font-size:1em; transition:transform 0.3s cubic-bezier(.34,1.56,.64,1); }
-.tab-btn:hover .ti { transform:scale(1.25) rotate(-8deg); }
-.tab-btn.active .ti { transform:scale(1.1); }
-
-/* ── CONTENT ──────────────────────────────────────── */
-.content { padding:36px 0 100px; }
-.tab-panel { display:none; }
-.tab-panel.active {
-  display:block;
-  animation:panelIn 0.5s cubic-bezier(.34,1.56,.64,1) both;
-}
-@keyframes panelIn{
-  from{opacity:0;transform:translateY(20px);}
-  to{opacity:1;transform:translateY(0);}
-}
-
-/* section header */
-.sec-head {
-  display:flex; align-items:center; gap:16px;
-  margin-bottom:30px; padding:0 2px;
-}
-.sec-head-left {
-  display:flex; align-items:center; gap:10px;
-}
-.sec-icon {
-  width:40px; height:40px;
-  background:linear-gradient(135deg,rgba(160,210,255,0.4),rgba(200,230,255,0.4));
-  border:1.5px solid var(--border2);
-  border-radius:12px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:1.2rem;
-  backdrop-filter:blur(8px);
-}
-.sec-head h2 {
-  font-family:'Comfortaa', sans-serif;
-  font-size:1.35rem; font-weight:700;
-  color:var(--bluedeep);
-}
-.sec-head-line { flex:1; height:1.5px; border-radius:99px;
-  background:linear-gradient(to right,var(--border2),transparent); }
-
-/* ── GRID ─────────────────────────────────────────── */
-.grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
-  gap:20px;
-}
-
-/* ── CARD ─────────────────────────────────────────── */
-.card {
-  background:var(--card);
-  backdrop-filter:blur(16px);
-  border:1.5px solid var(--border2);
-  border-radius:var(--r);
-  overflow:hidden;
-  box-shadow:var(--sh);
-  transition:transform 0.38s cubic-bezier(.34,1.56,.64,1), box-shadow 0.3s;
-  animation:cardPop 0.65s cubic-bezier(.34,1.56,.64,1) var(--cd,0s) both;
-  position:relative;
-}
-@keyframes cardPop{
-  from{opacity:0;transform:translateY(36px) scale(0.93);}
-  to{opacity:1;transform:translateY(0) scale(1);}
-}
-.card::before {
-  content:'';
-  position:absolute; inset:0;
-  background:linear-gradient(135deg,rgba(200,230,255,0.15),rgba(255,255,255,0.05));
-  pointer-events:none;
-}
-.card:hover {
-  transform:translateY(-8px) scale(1.02);
-  box-shadow:var(--sh2);
-}
-.card:hover .c-img img { transform:scale(1.08); }
-.card:hover .c-img .no-img { transform:scale(1.05); }
-
-/* card image */
-.c-img {
-  width:100%; aspect-ratio:1/1;
-  background:linear-gradient(135deg,#ddeeff,#eef6ff);
-  overflow:hidden; position:relative;
-}
-.c-img img {
-  width:100%; height:100%; object-fit:cover; display:block;
-  transition:transform 0.5s ease;
-}
-.c-img .no-img {
-  width:100%; height:100%;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:10px; transition:transform 0.4s ease;
-}
-.no-img-icon { font-size:3rem; opacity:0.4; }
-.no-img-text {
-  font-family:'Comfortaa',sans-serif; font-size:0.7rem;
-  letter-spacing:0.1em; text-transform:uppercase;
-  color:var(--textlight); opacity:0.8;
-}
-
-/* status pill */
-.s-pill {
-  position:absolute; top:12px; left:12px;
-  font-family:'Mitr',sans-serif; font-weight:500;
-  font-size:0.7rem; letter-spacing:0.06em;
-  text-transform:uppercase; padding:4px 12px;
-  border-radius:999px; backdrop-filter:blur(10px);
-  border:1.5px solid; display:flex; align-items:center; gap:5px;
-}
-.s-pill::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
-.s-nor   { background:var(--nor-bg);  color:var(--nor-c);  border-color:var(--nor-br); }
-.s-sale  { background:var(--sale-bg); color:var(--sale-c); border-color:var(--sale-br); }
-.s-off   { background:var(--off-bg);  color:var(--off-c);  border-color:var(--off-br); }
-
-/* card body */
-.c-body { padding:18px 18px 20px; }
-.c-tag {
-  font-family:'Comfortaa',sans-serif;
-  font-size:0.65rem; font-weight:700;
-  letter-spacing:0.12em; text-transform:uppercase;
-  color:var(--blue); margin-bottom:7px; display:block;
-}
-.c-title {
-  font-family:'Comfortaa',sans-serif;
-  font-size:1.05rem; font-weight:700;
-  color:var(--bluedeep); margin-bottom:7px;
-  line-height:1.3;
-}
-.c-desc {
-  font-size:0.88rem; font-weight:300;
-  color:var(--textmid); line-height:1.65;
-  margin-bottom:12px;
-}
-.c-about {
-  font-size:0.8rem; font-weight:300;
-  color:var(--textlight); line-height:1.6;
-  padding:10px 12px;
-  background:rgba(160,210,255,0.1);
-  border:1px solid rgba(160,210,255,0.25);
-  border-radius:var(--r-xs);
-  margin-bottom:14px;
-}
-.c-footer {
-  display:flex; align-items:center; justify-content:space-between;
-  flex-wrap:wrap; gap:8px;
-  padding-top:12px;
-  border-top:1px dashed rgba(160,210,255,0.4);
-}
-.c-price {
-  font-family:'Comfortaa',sans-serif;
-  font-size:1.2rem; font-weight:700;
-  background:linear-gradient(135deg,var(--blue),var(--bluedeep));
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  background-clip:text;
-}
-
-/* ── EMPTY STATE ──────────────────────────────────── */
-.empty {
-  grid-column:1/-1;
-  text-align:center; padding:70px 20px;
-  color:var(--textlight);
-}
-.empty-icon { font-size:3.5rem; display:block; margin-bottom:14px; opacity:0.35; }
-.empty-text { font-weight:300; font-size:0.95rem; }
-
-/* ── MUSIC CONTROL ────────────────────────────────── */
-.music-btn {
-  position:fixed; bottom:24px; right:24px; z-index:200;
-  width:46px; height:46px; border-radius:50%;
-  background:rgba(255,255,255,0.75);
-  backdrop-filter:blur(16px);
-  border:1.5px solid var(--border2);
-  box-shadow:var(--sh);
-  cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  font-size:1.2rem;
-  transition:all 0.3s cubic-bezier(.34,1.56,.64,1);
-  color:var(--bluedeep);
-}
-.music-btn:hover { transform:scale(1.12) rotate(10deg); box-shadow:var(--sh2); }
-.music-btn.playing { animation:musicPulse 2s ease-in-out infinite; }
-@keyframes musicPulse{
-  0%,100%{ box-shadow:0 0 0 0 rgba(96,168,240,0.4), var(--sh); }
-  50%{ box-shadow:0 0 0 8px rgba(96,168,240,0), var(--sh); }
-}
-
-/* ── WELCOME DIALOG ───────────────────────────────── */
-.dialog-overlay {
-  position:fixed; inset:0; z-index:1000;
-  background:rgba(200,225,255,0.35);
-  backdrop-filter:blur(18px);
-  display:flex; align-items:center; justify-content:center;
-  padding:24px;
-  animation:overlayIn 0.4s ease both;
-}
-@keyframes overlayIn{ from{opacity:0;} to{opacity:1;} }
-.dialog-overlay.hidden {
-  animation:overlayOut 0.4s ease both;
-  pointer-events:none;
-}
-@keyframes overlayOut{ from{opacity:1;} to{opacity:0;} }
-
-.dialog-box {
-  background:rgba(255,255,255,0.88);
-  backdrop-filter:blur(20px);
-  border:2px solid rgba(180,220,255,0.7);
-  border-radius:28px;
-  padding:44px 40px 36px;
-  max-width:400px; width:100%;
-  text-align:center;
-  box-shadow:0 20px 80px rgba(80,150,230,0.25);
-  animation:dialogIn 0.65s cubic-bezier(.34,1.56,.64,1) 0.15s both;
-  position:relative;
-  overflow:hidden;
-}
-.dialog-box::before {
-  content:'';
-  position:absolute; top:-60px; left:-60px;
-  width:200px; height:200px;
-  background:radial-gradient(circle,rgba(160,210,255,0.25),transparent 70%);
-  pointer-events:none;
-}
-.dialog-box::after {
-  content:'';
-  position:absolute; bottom:-40px; right:-40px;
-  width:160px; height:160px;
-  background:radial-gradient(circle,rgba(255,200,230,0.2),transparent 70%);
-  pointer-events:none;
-}
-@keyframes dialogIn{
-  from{opacity:0;transform:scale(0.8) translateY(30px);}
-  to{opacity:1;transform:scale(1) translateY(0);}
-}
-
-.dialog-emoji {
-  font-size:3.2rem;
-  display:block; margin-bottom:16px;
-  animation:emojiWave 2s ease-in-out infinite;
-}
-@keyframes emojiWave{
-  0%,100%{transform:rotate(0deg) scale(1);}
-  25%{transform:rotate(-12deg) scale(1.05);}
-  75%{transform:rotate(12deg) scale(1.05);}
-}
-.dialog-title {
-  font-family:'Comfortaa',sans-serif;
-  font-size:1.9rem; font-weight:700;
-  color:var(--bluedeep);
-  margin-bottom:10px;
-  letter-spacing:-0.01em;
-}
-.dialog-sub {
-  font-family:'Mitr',sans-serif; font-weight:300;
-  font-size:1rem; color:var(--textmid);
-  line-height:1.6; margin-bottom:30px;
-}
-.dialog-ok {
-  font-family:'Mitr',sans-serif; font-weight:500;
-  font-size:1rem; letter-spacing:0.04em;
-  padding:14px 48px;
-  background:linear-gradient(135deg,var(--blue),var(--bluedeep));
-  color:#fff; border:none; border-radius:999px;
-  cursor:pointer;
-  box-shadow:0 6px 24px rgba(60,130,210,0.4);
-  transition:all 0.3s cubic-bezier(.34,1.56,.64,1);
-  position:relative; z-index:1;
-}
-.dialog-ok:hover {
-  transform:translateY(-3px) scale(1.04);
-  box-shadow:0 10px 32px rgba(60,130,210,0.5);
-}
-.dialog-ok:active { transform:scale(0.97); }
-
-.dialog-deco {
-  display:flex; justify-content:center; gap:6px; margin-top:22px;
-}
-.dialog-deco-dot {
-  width:6px; height:6px; border-radius:50%;
-  background:var(--sky); opacity:0.5;
-  animation:dotBounce 1.8s ease-in-out infinite;
-}
-.dialog-deco-dot:nth-child(1){ animation-delay:0s; }
-.dialog-deco-dot:nth-child(2){ animation-delay:0.2s; background:var(--blue); }
-.dialog-deco-dot:nth-child(3){ animation-delay:0.4s; }
-@keyframes dotBounce{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
-
-/* ── FOOTER ───────────────────────────────────────── */
-footer {
-  position:relative; z-index:1;
-  text-align:center; padding:30px 20px;
-  border-top:1px solid rgba(160,210,255,0.3);
-  color:var(--textlight); font-weight:300; font-size:0.85rem;
-}
-footer span { color:var(--blue); }
-
-/* ── SCROLLBAR ────────────────────────────────────── */
-::-webkit-scrollbar{ width:5px; }
-::-webkit-scrollbar-track{ background:var(--bg2); }
-::-webkit-scrollbar-thumb{ background:var(--sky); border-radius:99px; }
-
-/* ── MOBILE ───────────────────────────────────────── */
-@media(max-width:600px){
-  header{ padding:48px 16px 28px; }
-  .tabs-track{ max-width:100%; }
-  .tab-btn{ padding:9px 12px; font-size:0.78rem; gap:4px; }
-  .tab-btn .tab-label{ display:none; }
-  .tab-btn .ti{ font-size:1.3rem; }
-  .grid{ grid-template-columns:1fr; }
-  .dialog-box{ padding:36px 24px 28px; }
-  .site-title{ font-size:2.1rem; }
-  .music-btn{ bottom:16px; right:16px; }
-}
+  .tabs{display:flex; gap:6px; margin-bottom:10px}
+  .tab{
+    padding:6px 12px; font-size:12px; border-radius:6px 6px 0 0;
+    background:var(--panel2); border:1px solid var(--line); border-bottom:none;
+    color:var(--dim); cursor:pointer;
+  }
+  .tab.active{background:#243040; color:var(--fg); border-color:#3a4a5e}
 </style>
 </head>
 <body>
 
-<!-- BG BLOBS -->
-<div class="blobs">
-  <div class="blob blob1"></div>
-  <div class="blob blob2"></div>
-  <div class="blob blob3"></div>
-  <div class="blob blob4"></div>
-</div>
+<header>
+  <h1>🎞️ GIF / Sheet → Single Sprite Sheet + Roblox Player</h1>
+  <span class="sub">แพ็คทุกเฟรมเป็นภาพเดียว · เล่นด้วย ImageRectOffset · คมชัด 1:1</span>
+  <span class="badge gif gif-badge" id="gifBadge">GIF: <b id="gifBadgeCount">0</b> เฟรม</span>
+  <span class="badge ok sharp-badge" id="sharpBadge">● พร้อมแพ็ค</span>
+</header>
 
-<!-- PARTICLES -->
-<div class="particles" id="particles"></div>
+<div class="app">
 
-<!-- CURSOR STAR -->
-<div class="cursor-star" id="cursorStar">✦</div>
+  <!-- ============ LEFT ============ -->
+  <div>
 
-<!-- ════════════════ WELCOME DIALOG ════════════════ -->
-<div class="dialog-overlay" id="welcomeDialog">
-  <div class="dialog-box">
-    <span class="dialog-emoji">✦</span>
-    <div class="dialog-title">Welcome</div>
-    <div class="dialog-sub">คุณสามารถเลือกสินค้าก่อนตัดสินใจซื้อได้!</div>
-    <button class="dialog-ok" id="dialogOkBtn">ไปต่อ</button>
-    <div class="dialog-deco">
-      <div class="dialog-deco-dot"></div>
-      <div class="dialog-deco-dot"></div>
-      <div class="dialog-deco-dot"></div>
+    <div class="panel">
+      <h2>1 · โหลดภาพ / GIF</h2>
+      <div class="drop" id="drop">
+        <strong>คลิก หรือลากไฟล์มาวาง</strong>
+        PNG · JPG · WEBP · GIF (แอนิเมชัน)
+      </div>
+      <input type="file" id="file" accept="image/*,.gif" hidden>
+      <div class="meta" id="imgInfo" style="margin-top:10px">ยังไม่มีภาพ</div>
     </div>
+
+    <div class="panel">
+      <h2>2 · จัดวาง Sprite Sheet</h2>
+      <div class="row">
+        <div>
+          <label>รูปแบบตาราง</label>
+          <select id="packMode">
+            <option value="auto">Auto (เกือบจัตุรัส)</option>
+            <option value="manual">กำหนดเอง</option>
+          </select>
+        </div>
+        <div>
+          <label>ลำดับการวาง</label>
+          <select id="order">
+            <option value="row">ซ้าย → ขวา, บน → ล่าง</option>
+            <option value="col">บน → ล่าง, ซ้าย → ขวา</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" id="manualRow" style="display:none">
+        <div><label>Columns</label><input type="number" id="cols" value="8" min="1" max="64"></div>
+        <div><label>Rows</label><input type="number" id="rows" value="8" min="1" max="64"></div>
+      </div>
+      <div class="hint" id="packHint">—</div>
+    </div>
+
+    <div class="panel" id="panelGif" style="display:none">
+      <h2>3 · ตั้งค่า GIF</h2>
+      <div class="row">
+        <div><label>จำนวนเฟรมที่ใช้</label><input type="number" id="gifCount" value="0" min="1"></div>
+        <div><label>เริ่มที่เฟรม</label><input type="number" id="gifStart" value="0" min="0"></div>
+      </div>
+      <div class="row one">
+        <label class="check"><input type="checkbox" id="gifUseDelays" checked> ใช้ความเร็วจาก GIF (per-frame delay)</label>
+      </div>
+      <div class="hint" id="gifHint">—</div>
+    </div>
+
+    <div class="panel">
+      <h2>3 · เล่นพรีวิว</h2>
+      <div class="row">
+        <div>
+          <label>FPS <span id="fpsNote" class="pill" style="text-transform:none">export</span></label>
+          <input type="number" id="fps" value="24" min="1" max="120">
+        </div>
+        <div>
+          <label>Zoom</label>
+          <select id="zoom">
+            <option value="auto">Auto (integer)</option>
+            <option value="1">1×</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+            <option value="4">4×</option>
+            <option value="6">6×</option>
+            <option value="8">8×</option>
+            <option value="12">12×</option>
+          </select>
+        </div>
+      </div>
+      <div class="row one">
+        <div><label>Frame <span id="frameNum" class="pill">1</span></label>
+          <input type="range" id="scrub" min="0" max="63" value="0" style="margin-top:11px">
+        </div>
+      </div>
+      <div class="btns">
+        <button id="btnPlay" class="primary">⏸ Pause</button>
+        <button id="btnPrev">◀ ก่อนหน้า</button>
+      </div>
+      <div style="height:8px"></div>
+      <div class="btns">
+        <button id="btnNext">ถัดไป ▶</button>
+        <button id="btnFirst">⏮ เริ่มใหม่</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>4 · ส่งออก Sprite Sheet เดียว</h2>
+      <div class="row">
+        <div>
+          <label>รูปแบบไฟล์</label>
+          <select id="exportFormat">
+            <option value="png">PNG (lossless — แนะนำ)</option>
+            <option value="jpg">JPEG (เล็กกว่า, มี noise)</option>
+          </select>
+        </div>
+        <div>
+          <label>JPEG Quality</label>
+          <input type="number" id="jpgQuality" value="98" min="60" max="100">
+        </div>
+      </div>
+      <div class="btns full">
+        <button id="btnSheet" class="ok" disabled>⬇ ดาวน์โหลด Sprite Sheet + Lua</button>
+      </div>
+      <div style="height:8px"></div>
+      <div class="btns">
+        <button id="btnLua" disabled>📋 คัดลอก Lua</button>
+        <button id="btnPlayer" disabled>📋 คัดลอก Player</button>
+      </div>
+      <div style="height:12px"></div>
+      <div class="status" id="status">รอโหลดภาพ…</div>
+    </div>
+
+  </div>
+
+  <!-- ============ RIGHT ============ -->
+  <div class="stage">
+
+    <div class="canvas-wrap">
+      <div class="meta">พรีวิวแอนิเมชัน · <b id="pvSize">—</b> · <span id="pvZoom">zoom —</span></div>
+      <div class="canvas-box"><canvas id="preview" width="256" height="256"></canvas></div>
+      <div class="bar">
+        <span class="pill" id="pillFps">24 fps</span>
+        <span class="pill" id="pillDur">—</span>
+        <span class="pill" id="pillFrame">frame 1 / 1</span>
+      </div>
+    </div>
+
+    <div class="canvas-wrap">
+      <div class="meta">Sprite Sheet ที่จะส่งออก · <b id="sheetSize">—</b> · <span id="sheetDims">—</span></div>
+      <div class="canvas-box"><canvas id="sheetCanvas" width="1" height="1"></canvas></div>
+      <div class="hint" id="sheetHint">
+        ภาพนี้คือ <b>ภาพเดียว</b> ที่จะได้ — ทุกเฟรมเรียงต่อกันเป็นตาราง
+        Roblox จะเล่นด้วย <code>ImageRectOffset</code> + <code>ImageRectSize</code>
+        ไม่ต้องอัปโหลดแยก
+      </div>
+    </div>
+
   </div>
 </div>
-
-<!-- ════════════════ MUSIC BUTTON ════════════════ -->
-    
-<button class="music-btn" id="musicBtn" title="เปิด/ปิดเพลง">🎵</button>
-
-<!-- ════════════════ MAIN ════════════════ -->
-<div class="wrap">
-
-  <!-- HEADER -->
-  <header>
-    <div class="hd-ribbon">
-      <div class="hd-ribbon-dot"></div>
-      งานจากคนจริงๆไม่มีไอรับประกันด้วยนาม@imc72s
-    </div>
-    <h1 class="site-title">DN<span class="accent">SHOP</span> ˖°</h1>
-    <p class="site-tagline">สามารถนำIDแต่ละแพคไปส่งซื้อได้เลยนะ ♡</p>
-    <div class="hd-deco">
-      <div class="hd-pill"></div>
-      <div class="hd-pill"></div>
-      <div class="hd-pill"></div>
-    </div>
-  </header>
-
-  <!-- TABS -->
-  <div class="tabs-wrapper">
-    <div class="tabs-track">
-      <button class="tab-btn active" data-tab="pk" onclick="switchTab('pk',this)">
-        <span class="ti">✦ Pack ✦</span><span class="tab-label">Pack</span>
-      </button>
-      <button class="tab-btn" data-tab="atb" onclick="switchTab('atb',this)">
-        <span class="ti">✦ Adoptable ✦</span><span class="tab-label">Adoptable</span>
-      </button>
-      <button class="tab-btn" data-tab="vtm" onclick="switchTab('vtm',this)">
-        <span class="ti">✦ VModel ✦</span><span class="tab-label">VTuber Model</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- CONTENT -->
-  <div class="content">
-
-    <div class="tab-panel active" id="panel-pk">
-      <div class="sec-head">
-        <div class="sec-head-left">
-          <div class="sec-icon">1</div>
-          <h2>Pack</h2>
-        </div>
-        <div class="sec-head-line"></div>
-      </div>
-      <div class="grid" id="grid-pk"></div>
-    </div>
-
-    <div class="tab-panel" id="panel-atb">
-      <div class="sec-head">
-        <div class="sec-head-left">
-          <div class="sec-icon">2</div>
-          <h2>Adoptable</h2>
-        </div>
-        <div class="sec-head-line"></div>
-      </div>
-      <div class="grid" id="grid-atb"></div>
-    </div>
-
-    <div class="tab-panel" id="panel-vtm">
-      <div class="sec-head">
-        <div class="sec-head-left">
-          <div class="sec-icon">3</div>
-          <h2>VTuber Model</h2>
-        </div>
-        <div class="sec-head-line"></div>
-      </div>
-      <div class="grid" id="grid-vtm"></div>
-    </div>
-
-  </div>
-</div>
-
-<!-- FOOTER -->
-<footer>made with love <span>sheap and safe</span> · DnShop © 2025</footer>
-
-<!-- ════════════════════════════════════════════════
-     AUDIO ELEMENT (hidden)
-════════════════════════════════════════════════ -->
-<audio id="bgAudio" loop preload="auto"></audio>
 
 <script>
-/* ══════════════════════════════════════════════════
-   STATUS CONSTANTS
-══════════════════════════════════════════════════ */
-const STATUS = {
-  nor:     { label:'Open',     cls:'s-nor'  },
-  sale:    { label:'On Sale',  cls:'s-sale' },
-  offsale: { label:'Closed',   cls:'s-off'  },
+"use strict";
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  mode: "sheet",
+  img: null,
+  gifFrames: null,
+  gifDelays: null,
+  gifW: 0, gifH: 0,
+  cols: 8, rows: 8,
+  count: 64, start: 0,
+  order: "row",
+  packMode: "auto",
+  fps: 24,
+  idx: 0, acc: 0,
+  playing: true,
+  zoom: "auto",
 };
 
-/* ══════════════════════════════════════════════════
-   CARD RENDERER
-══════════════════════════════════════════════════ */
-function renderCard({ tab, imgUrl, title, description, about, price, status, icon }) {
-  const s   = STATUS[status] || STATUS.nor;
-  const grid = document.getElementById('grid-' + tab);
-  const idx  = grid.querySelectorAll('.card').length;
-  const delay = (idx * 0.08) + 's';
+const els = {
+  drop:      document.getElementById("drop"),
+  file:      document.getElementById("file"),
+  imgInfo:   document.getElementById("imgInfo"),
+  packMode:  document.getElementById("packMode"),
+  manualRow: document.getElementById("manualRow"),
+  cols:      document.getElementById("cols"),
+  rows:      document.getElementById("rows"),
+  order:     document.getElementById("order"),
+  packHint:  document.getElementById("packHint"),
+  panelGif:  document.getElementById("panelGif"),
+  gifCount:  document.getElementById("gifCount"),
+  gifStart:  document.getElementById("gifStart"),
+  gifUseDelays: document.getElementById("gifUseDelays"),
+  gifHint:   document.getElementById("gifHint"),
+  gifBadge:  document.getElementById("gifBadge"),
+  gifBadgeCount: document.getElementById("gifBadgeCount"),
+  sharpBadge: document.getElementById("sharpBadge"),
+  fps:       document.getElementById("fps"),
+  fpsNote:   document.getElementById("fpsNote"),
+  zoom:      document.getElementById("zoom"),
+  scrub:     document.getElementById("scrub"),
+  frameNum:  document.getElementById("frameNum"),
+  preview:   document.getElementById("preview"),
+  sheetCanvas: document.getElementById("sheetCanvas"),
+  pvSize:    document.getElementById("pvSize"),
+  pvZoom:    document.getElementById("pvZoom"),
+  sheetSize: document.getElementById("sheetSize"),
+  sheetDims: document.getElementById("sheetDims"),
+  sheetHint: document.getElementById("sheetHint"),
+  pillFps:   document.getElementById("pillFps"),
+  pillDur:   document.getElementById("pillDur"),
+  pillFrame: document.getElementById("pillFrame"),
+  btnPlay:   document.getElementById("btnPlay"),
+  btnPrev:   document.getElementById("btnPrev"),
+  btnNext:   document.getElementById("btnNext"),
+  btnFirst:  document.getElementById("btnFirst"),
+  exportFormat: document.getElementById("exportFormat"),
+  jpgQuality: document.getElementById("jpgQuality"),
+  btnSheet:  document.getElementById("btnSheet"),
+  btnLua:    document.getElementById("btnLua"),
+  btnPlayer: document.getElementById("btnPlayer"),
+  status:    document.getElementById("status"),
+};
 
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.style.setProperty('--cd', delay);
-
-  const imgHTML = (imgUrl && imgUrl.trim())
-    ? `<img src="${imgUrl}" alt="${title}" loading="lazy"
-         onerror="this.parentElement.innerHTML='<div class=no-img><div class=no-img-icon>${icon||'🖼️'}</div><div class=no-img-text>no image</div></div>'">`
-    : `<div class="no-img">
-         <div class="no-img-icon">${icon || 'loading..'}</div>
-         <div class="no-img-text">no image</div>
-       </div>`;
-
-  card.innerHTML = `
-    <div class="c-img">
-      ${imgHTML}
-      <div class="s-pill ${s.cls}">${s.label}</div>
-    </div>
-    <div class="c-body">
-      <span class="c-tag">${tab.toUpperCase()}</span>
-      <div class="c-title">${title}</div>
-      ${description ? `<div class="c-desc">${description}</div>` : ''}
-      ${about ? `<div class="c-about">${about}</div>` : ''}
-      <div class="c-footer">
-        <div class="c-price">${price}</div>
-      </div>
-    </div>
-  `;
-  grid.appendChild(card);
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function setStatus(msg, kind) {
+  els.status.textContent = msg;
+  els.status.className = "status" + (kind ? " " + kind : "");
 }
 
-/* ══════════════════════════════════════════════════
-   TEMPLATE FUNCTIONS ← ใส่ข้อมูลตรงนี้
-══════════════════════════════════════════════════ */
-
-/**
- * pack(imgUrl, title, description, about, price, status)
- * status: "nor" | "sale" | "offsale"
- */
-function pack(imgUrl, title, description, about, price, status) {
-  renderCard({ tab:'pk', imgUrl, title, description, about, price, status, icon:'📦' });
+function indexToCell(i, cols, rows, order) {
+  if (order === "col") return { c: Math.floor(i / rows), r: i % rows };
+  return { c: i % cols, r: Math.floor(i / cols) };
 }
 
-/**
- * adoptable(imgUrl, title, description, about, price, status)
- */
-function adoptable(imgUrl, title, description, about, price, status) {
-  renderCard({ tab:'atb', imgUrl, title, description, about, price, status, icon:'🌸' });
-}
+/** ★ เฟรมปัจจุบัน — คืนเป็น canvas (ทั้ง sheet และ gif จะ normalize เป็น canvas) */
+let _frameCache = null;
+let _frameCacheKey = "";
+function getFrames() {
+  const key = state.mode + "|" + state.cols + "|" + state.rows + "|" +
+              state.count + "|" + state.start + "|" + state.order + "|" +
+              (state.img ? state.img.src : "g") + "|" +
+              (state.gifFrames ? state.gifFrames.length : 0);
 
-/**
- * vtubemodel(imgUrl, title, description, about, price, status)
- */
-function vtubemodel(imgUrl, title, description, about, price, status) {
-  renderCard({ tab:'vtm', imgUrl, title, description, about, price, status, icon:'🎀' });
-}
+  if (_frameCacheKey === key && _frameCache) return _frameCache;
 
-/* ══════════════════════════════════════════════════
-   ✏️  เพิ่มรายการตรงนี้
-══════════════════════════════════════════════════ */
-
-// ── PACK ──────────────────────────────────────
-
-  
-  
-  
-  
-// ── ADOPTABLE ─────────────────────────────────
-
-  
-  
-  
-
-// ── VTUBER MODEL ──────────────────────────────
-
-  
-  
-  
-/* ══════════════════════════════════════════════════
-   EMPTY STATE CHECK
-══════════════════════════════════════════════════ */
-['pk','atb','vtm'].forEach(tab => {
-  const g = document.getElementById('grid-' + tab);
-  if (!g.children.length) {
-    g.innerHTML = `<div class="empty">
-      <span class="empty-icon">☁️</span>
-      <span class="empty-text">ยังไม่มีรายการในหมวดนี้ค่ะ~</span>
-    </div>`;
+  const out = [];
+  if (state.mode === "gif" && state.gifFrames) {
+    for (let i = 0; i < state.count; i++) {
+      const f = state.gifFrames[state.start + i];
+      if (!f) break;
+      out.push(f);
+    }
+  } else if (state.img) {
+    const fw = Math.floor(state.img.width / state.cols);
+    const fh = Math.floor(state.img.height / state.rows);
+    const total = state.cols * state.rows;
+    for (let i = 0; i < state.count; i++) {
+      const g = state.start + i;
+      if (g >= total) break;
+      const { c, r } = indexToCell(g, state.cols, state.rows, state.order);
+      const cv = document.createElement("canvas");
+      cv.width = fw; cv.height = fh;
+      const ctx = cv.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.mozImageSmoothingEnabled = false;
+      ctx.webkitImageSmoothingEnabled = false;
+      ctx.drawImage(state.img, c * fw, r * fh, fw, fh, 0, 0, fw, fh);
+      out.push(cv);
+    }
   }
-});
 
-/* ══════════════════════════════════════════════════
-   TAB SWITCH
-══════════════════════════════════════════════════ */
-function switchTab(id, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + id).classList.add('active');
-  btn.classList.add('active');
+  _frameCache = out;
+  _frameCacheKey = key;
+  return out;
 }
 
-/* ══════════════════════════════════════════════════
-   BACKGROUND MUSIC SYSTEM
-══════════════════════════════════════════════════ */
-const audio       = document.getElementById('bgAudio');
-const musicBtn    = document.getElementById('musicBtn');
-let   bgmEnabled  = false;   // เปิดหลังกด dialog
-let   userMuted   = false;   // mute จาก music button
-const FADE_STEP   = 0.05;
-const FADE_INTERVAL = 40;    // ms
+function invalidateCache() {
+  _frameCache = null;
+  _frameCacheKey = "";
+}
 
-audio.loop   = true;
-audio.volume = 0.05;
-
-// ── bgs() ─ ตั้ง base64 หรือ URL ──────────────────
-function bgs(base64 = "") {
-  if (!base64 || base64.trim() === "") return;
-  // รองรับทั้ง raw base64 (mp3) และ data URI
-  if (base64.startsWith('data:')) {
-    audio.src = base64;
-  } else {
-    audio.src = 'data:audio/mpeg;base64,' + base64;
+function frameSize() {
+  if (state.mode === "gif" && state.gifFrames && state.gifFrames[0]) {
+    return { fw: state.gifFrames[0].width, fh: state.gifFrames[0].height };
   }
-}
-
-// เพิ่มเพลงได้ตรงนี้ เช่น:
-// bgs("BASE64_STRING_ของ_MP3");
-// หรือ URL โดยตรง:
-// 
-  audio.src = "https://github.com/imc72s/dnshop/raw/refs/heads/main/New%20Song%20(17).mp3";
-
-// ── fade helpers ──────────────────────────────────
-function fadeIn(target = 1, cb) {
-  clearInterval(audio._fadeTimer);
-  audio._fadeTimer = setInterval(() => {
-    const next = Math.min(audio.volume + FADE_STEP, target);
-    audio.volume = parseFloat(next.toFixed(3));
-    if (audio.volume >= target) { clearInterval(audio._fadeTimer); cb && cb(); }
-  }, FADE_INTERVAL);
-}
-function fadeOut(cb) {
-  clearInterval(audio._fadeTimer);
-  audio._fadeTimer = setInterval(() => {
-    const next = Math.max(audio.volume - FADE_STEP, 0);
-    audio.volume = parseFloat(next.toFixed(3));
-    if (audio.volume <= 0) { clearInterval(audio._fadeTimer); cb && cb(); }
-  }, FADE_INTERVAL);
-}
-
-// ── play / pause control ──────────────────────────
-function startBGM() {
-  if (!audio.src || audio.src === window.location.href) return;
-  audio.volume = 0;
-  audio.play().then(() => {
-    if (!userMuted) fadeIn(1);
-  }).catch(() => {});
-  updateMusicBtn();
-}
-
-function stopBGM(instant = false) {
-  if (instant) { audio.pause(); }
-  else fadeOut(() => audio.pause());
-  updateMusicBtn();
-}
-
-function updateMusicBtn() {
-  const playing = !audio.paused && audio.volume > 0;
-  musicBtn.textContent = playing ? '🎵' : '🔇';
-  musicBtn.classList.toggle('playing', playing);
-}
-
-// ── music button toggle ───────────────────────────
-musicBtn.addEventListener('click', () => {
-  if (!bgmEnabled) return;
-  if (audio.paused) {
-    userMuted = false;
-    startBGM();
-  } else {
-    userMuted = true;
-    stopBGM();
+  if (state.img) {
+    return {
+      fw: Math.max(1, Math.floor(state.img.width  / state.cols)),
+      fh: Math.max(1, Math.floor(state.img.height / state.rows)),
+    };
   }
-});
+  return { fw: 1, fh: 1 };
+}
 
-// ── Page Visibility API ────────────────────────────
-// (tab switch, screen lock, minimize, etc.)
-document.addEventListener('visibilitychange', () => {
-  if (!bgmEnabled || !audio.src) return;
-  if (document.hidden) {
-    fadeOut();
-  } else {
-    if (!userMuted) {
-      if (audio.paused) {
-        audio.volume = 0;
-        audio.play().then(() => fadeIn(1)).catch(() => {});
+function frameDuration(i) {
+  if (state.mode === "gif" && state.gifDelays && els.gifUseDelays.checked) {
+    const d = state.gifDelays[state.start + i];
+    return (d && d > 0.01) ? d : 0.1;
+  }
+  return 1 / state.fps;
+}
+
+function totalDuration() {
+  let t = 0;
+  for (let i = 0; i < state.count; i++) t += frameDuration(i);
+  return t;
+}
+
+function averageFps() {
+  const d = totalDuration();
+  return d > 0 ? state.count / d : state.fps;
+}
+
+function makeCrispContext(canvas, w, h) {
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d", { alpha: true });
+  ctx.imageSmoothingEnabled = false;
+  ctx.mozImageSmoothingEnabled = false;
+  ctx.webkitImageSmoothingEnabled = false;
+  ctx.msImageSmoothingEnabled = false;
+  ctx.oImageSmoothingEnabled = false;
+  return ctx;
+}
+
+function computeZoom(fw, fh) {
+  if (state.zoom !== "auto") return parseFloat(state.zoom);
+  const maxW = 600, maxH = 440;
+  const z = Math.floor(Math.min(maxW / fw, maxH / fh));
+  return z >= 1 ? z : Math.min(maxW / fw, maxH / fh);
+}
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
+}
+
+/* ============================================================
+   AUTO GRID
+   ============================================================ */
+function computeAutoGrid(n) {
+  // เลือก grid ที่ใกล้สี่เหลี่ยมจัตุรัสที่สุด
+  let best = { cols: n, rows: 1, score: Infinity };
+  for (let c = 1; c <= n; c++) {
+    const r = Math.ceil(n / c);
+    if (c * r < n) continue;
+    const aspect = c / r;
+    // ให้คะแนนความสมดุล + จำนวนช่องว่าง
+    const waste = c * r - n;
+    const score = Math.abs(Math.log(aspect)) * 3 + waste;
+    if (score < best.score) best = { cols: c, rows: r, score };
+  }
+  return { cols: best.cols, rows: best.rows };
+}
+
+function applyAutoGrid() {
+  if (state.packMode !== "auto") return;
+  const n = state.count;
+  const g = computeAutoGrid(n);
+  state.cols = g.cols;
+  state.rows = g.rows;
+  els.cols.value = state.cols;
+  els.rows.value = state.rows;
+}
+
+/* ============================================================
+   ZIP WRITER
+   ============================================================ */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(buf) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) crc = CRC_TABLE[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const parts = []; const central = []; let offset = 0;
+  const now = new Date();
+  const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xFFFF;
+  const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xFFFF;
+
+  for (const f of files) {
+    const nameBytes = enc.encode(f.name);
+    const crc = crc32(f.data);
+    const size = f.data.length;
+    const lh = new Uint8Array(30 + nameBytes.length);
+    const lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true); lv.setUint16(8, 0, true);
+    lv.setUint16(10, dosTime, true); lv.setUint16(12, dosDate, true);
+    lv.setUint32(14, crc, true); lv.setUint32(18, size, true); lv.setUint32(22, size, true);
+    lv.setUint16(26, nameBytes.length, true); lv.setUint16(28, 0, true);
+    lh.set(nameBytes, 30);
+    parts.push(lh, f.data);
+
+    const cd = new Uint8Array(46 + nameBytes.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true); cv.setUint16(10, 0, true);
+    cv.setUint16(12, dosTime, true); cv.setUint16(14, dosDate, true);
+    cv.setUint32(16, crc, true); cv.setUint32(20, size, true); cv.setUint32(24, size, true);
+    cv.setUint16(28, nameBytes.length, true); cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true); cv.setUint16(34, 0, true); cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true); cv.setUint32(42, offset, true);
+    cd.set(nameBytes, 46);
+    central.push(cd);
+    offset += lh.length + size;
+  }
+
+  const cdSize = central.reduce((a, b) => a + b.length, 0);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true); ev.setUint16(4, 0, true); ev.setUint16(6, 0, true);
+  ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true); ev.setUint32(16, offset, true); ev.setUint16(20, 0, true);
+
+  return new Blob([...parts, ...central, eocd], { type: "application/zip" });
+}
+
+/* ============================================================
+   GIF DECODER
+   ============================================================ */
+function lzwDecode(data, minCodeSize, pixelCount) {
+  const MAX_CODE = 4096;
+  const clearCode = 1 << minCodeSize;
+  const eoiCode = clearCode + 1;
+  let codeSize = minCodeSize + 1;
+  let nextCode = eoiCode + 1;
+  const prefix = new Int32Array(MAX_CODE);
+  const suffix = new Uint8Array(MAX_CODE);
+  const stack  = new Uint8Array(MAX_CODE);
+  for (let i = 0; i < clearCode; i++) { prefix[i] = -1; suffix[i] = i; }
+  const out = new Uint8Array(pixelCount);
+  let outPos = 0, bitPos = 0;
+
+  function readCode() {
+    let code = 0;
+    for (let i = 0; i < codeSize; i++) {
+      const byteIdx = (bitPos + i) >> 3;
+      if (byteIdx >= data.length) return -1;
+      code |= ((data[byteIdx] >> ((bitPos + i) & 7)) & 1) << i;
+    }
+    bitPos += codeSize;
+    return code;
+  }
+
+  let oldCode = -1, firstChar = 0, stackTop = 0;
+  while (outPos < pixelCount) {
+    const code = readCode();
+    if (code === -1 || code === eoiCode) break;
+    if (code === clearCode) { codeSize = minCodeSize + 1; nextCode = eoiCode + 1; oldCode = -1; continue; }
+    if (oldCode === -1) { out[outPos++] = suffix[code]; oldCode = code; firstChar = code; continue; }
+    const inCode = code;
+    if (code >= nextCode) { stack[stackTop++] = firstChar; code = oldCode; }
+    while (code >= clearCode) { stack[stackTop++] = suffix[code]; code = prefix[code]; }
+    firstChar = suffix[code];
+    stack[stackTop++] = firstChar;
+    if (nextCode < MAX_CODE) {
+      prefix[nextCode] = oldCode; suffix[nextCode] = firstChar; nextCode++;
+      if (nextCode === (1 << codeSize) && codeSize < 12) codeSize++;
+    }
+    oldCode = inCode;
+    while (stackTop > 0) {
+      if (outPos >= pixelCount) break;
+      out[outPos++] = stack[--stackTop];
+    }
+  }
+  return out;
+}
+
+function deinterlace(pixels, w, h) {
+  const out = new Uint8Array(w * h);
+  const passes = [[0, 8], [4, 8], [2, 4], [1, 2]];
+  let srcRow = 0;
+  for (const [start, step] of passes) {
+    for (let y = start; y < h; y += step) {
+      out.set(pixels.subarray(srcRow * w, (srcRow + 1) * w), y * w);
+      srcRow++;
+    }
+  }
+  return out;
+}
+
+function parseGif(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const dv = new DataView(buffer);
+  let p = 0;
+  const sig = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]);
+  if (sig !== "GIF87a" && sig !== "GIF89a") throw new Error("ไม่ใช่ไฟล์ GIF");
+  p = 6;
+  const screenW = dv.getUint16(p, true); p += 2;
+  const screenH = dv.getUint16(p, true); p += 2;
+  const packed  = bytes[p++]; p++; p++;
+  const gctFlag = !!(packed & 0x80);
+  const gctSize = 2 << (packed & 0x07);
+  let gct = null;
+  if (gctFlag) { gct = bytes.subarray(p, p + gctSize * 3); p += gctSize * 3; }
+
+  const screenBuf = new Uint8ClampedArray(screenW * screenH * 4);
+  const frames = [], delays = [];
+  let gce = null, prevDisposal = 0, prevRect = null, savedBuf = null;
+
+  while (p < bytes.length) {
+    const marker = bytes[p++];
+    if (marker === 0x3B) break;
+    if (marker === 0x21) {
+      const label = bytes[p++];
+      if (label === 0xF9) {
+        p++;
+        const gp = bytes[p++];
+        const delayCs = dv.getUint16(p, true); p += 2;
+        const tIdx = bytes[p++]; p++;
+        gce = { disposal: (gp >> 2) & 0x07, transparentIdx: (gp & 0x01) ? tIdx : -1, delay: delayCs };
+        continue;
       } else {
-        fadeIn(1);
+        while (p < bytes.length) { const sz = bytes[p++]; if (sz === 0) break; p += sz; }
+        continue;
       }
     }
-    updateMusicBtn();
+    if (marker === 0x2C) {
+      const left = dv.getUint16(p, true); p += 2;
+      const top  = dv.getUint16(p, true); p += 2;
+      const w    = dv.getUint16(p, true); p += 2;
+      const h    = dv.getUint16(p, true); p += 2;
+      const ip   = bytes[p++];
+      const lctFlag = !!(ip & 0x80);
+      const interlaced = !!(ip & 0x40);
+      const lctSize = 2 << (ip & 0x07);
+      let lct = null;
+      if (lctFlag) { lct = bytes.subarray(p, p + lctSize * 3); p += lctSize * 3; }
+      const ct = lct || gct;
+      if (!ct) throw new Error("GIF ไม่มี color table");
+
+      const minCodeSize = bytes[p++];
+      const chunks = [];
+      while (p < bytes.length) {
+        const sz = bytes[p++]; if (sz === 0) break;
+        chunks.push(bytes.subarray(p, p + sz)); p += sz;
+      }
+      let total = 0; for (const c of chunks) total += c.length;
+      const lzwData = new Uint8Array(total);
+      let off = 0; for (const c of chunks) { lzwData.set(c, off); off += c.length; }
+
+      let pixels = lzwDecode(lzwData, minCodeSize, w * h);
+      if (interlaced) pixels = deinterlace(pixels, w, h);
+
+      if (prevDisposal === 2 && prevRect) {
+        for (let y = prevRect.top; y < prevRect.top + prevRect.h; y++)
+          for (let x = prevRect.left; x < prevRect.left + prevRect.w; x++) {
+            const i = (y * screenW + x) * 4;
+            screenBuf[i] = 0; screenBuf[i+1] = 0; screenBuf[i+2] = 0; screenBuf[i+3] = 0;
+          }
+      } else if (prevDisposal === 3 && savedBuf) screenBuf.set(savedBuf);
+
+      if (gce && gce.disposal === 3) savedBuf = screenBuf.slice();
+
+      const tIdx = gce ? gce.transparentIdx : -1;
+      for (let y = 0; y < h; y++) {
+        const dstRow = (top + y) * screenW;
+        const srcRow = y * w;
+        for (let x = 0; x < w; x++) {
+          const pi = pixels[srcRow + x];
+          if (pi === tIdx) continue;
+          const sIdx = pi * 3;
+          const dIdx = (dstRow + (left + x)) * 4;
+          screenBuf[dIdx] = ct[sIdx]; screenBuf[dIdx+1] = ct[sIdx+1];
+          screenBuf[dIdx+2] = ct[sIdx+2]; screenBuf[dIdx+3] = 255;
+        }
+      }
+
+      const cv = document.createElement("canvas");
+      cv.width = screenW; cv.height = screenH;
+      cv.getContext("2d").putImageData(
+        new ImageData(new Uint8ClampedArray(screenBuf), screenW, screenH), 0, 0
+      );
+      frames.push(cv);
+      delays.push((gce ? gce.delay : 10) / 100);
+      prevDisposal = gce ? gce.disposal : 0;
+      prevRect = { left, top, w, h };
+      gce = null;
+    }
   }
-});
+  if (!frames.length) throw new Error("ไม่พบเฟรมใน GIF");
+  return { frames, delays, width: screenW, height: screenH };
+}
 
-// ── Page focus / blur (window switch) ─────────────
-window.addEventListener('blur', () => {
-  if (!bgmEnabled || userMuted) return;
-  fadeOut();
-});
-window.addEventListener('focus', () => {
-  if (!bgmEnabled || userMuted) return;
-  if (audio.paused) {
-    audio.volume = 0;
-    audio.play().then(() => fadeIn(1)).catch(() => {});
-  } else { fadeIn(1); }
-  updateMusicBtn();
-});
+async function decodeGifWithImageDecoder(file) {
+  const buf = await file.arrayBuffer();
+  const decoder = new ImageDecoder({ data: buf, type: "image/gif" });
+  await decoder.completed;
+  await decoder.tracks.ready;
+  const track = decoder.tracks.selectedTrack;
+  const frameCount = track.frameCount;
+  if (frameCount < 2) throw new Error("GIF นี้ไม่มีแอนิเมชัน");
 
-// ── Page close / unload ───────────────────────────
-window.addEventListener('pagehide',      () => { audio.pause(); });
-window.addEventListener('beforeunload',  () => { audio.pause(); });
-
-/* ══════════════════════════════════════════════════
-   WELCOME DIALOG
-══════════════════════════════════════════════════ */
-const dialogOverlay = document.getElementById('welcomeDialog');
-const dialogOkBtn   = document.getElementById('dialogOkBtn');
-
-dialogOkBtn.addEventListener('click', () => {
-  dialogOverlay.classList.add('hidden');
-  setTimeout(() => { dialogOverlay.style.display = 'none'; }, 400);
-  bgmEnabled = true;
-  startBGM();
-});
-
-/* ══════════════════════════════════════════════════
-   PARTICLES
-══════════════════════════════════════════════════ */
-(function spawnParticles() {
-  const container = document.getElementById('particles');
-  const emojis = ['✦','✧','·','˖','⋆','°','♡','˚'];
-  for (let i = 0; i < 30; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-    p.style.left  = Math.random() * 100 + 'vw';
-    p.style.top   = (30 + Math.random() * 70) + 'vh';
-    p.style.color = ['#a8d4ff','#60a8f0','#ffb8d4','#ffd080','#c0e8ff'][Math.floor(Math.random()*5)];
-    p.style.setProperty('--ps',    (8 + Math.random() * 10) + 'px');
-    p.style.setProperty('--pd',    (7 + Math.random() * 10) + 's');
-    p.style.setProperty('--pdelay',(Math.random() * 12)     + 's');
-    container.appendChild(p);
+  const frames = [], delays = [];
+  let W = 0, H = 0;
+  for (let i = 0; i < frameCount; i++) {
+    const { image } = await decoder.decode({ frameIndex: i });
+    if (i === 0) { W = image.displayWidth; H = image.displayHeight; }
+    const cv = document.createElement("canvas");
+    const ctx = makeCrispContext(cv, W, H);
+    ctx.drawImage(image, 0, 0);
+    frames.push(cv);
+    delays.push(image.duration ? image.duration / 1e6 : 0.1);
+    image.close();
   }
-})();
+  return { frames, delays, width: W, height: H };
+}
 
-/* ══════════════════════════════════════════════════
-   CUSTOM CURSOR
-══════════════════════════════════════════════════ */
-(function initCursor() {
-  const star = document.getElementById('cursorStar');
-  star.style.opacity = '0';
-  document.addEventListener('mousemove', e => {
-    star.style.opacity = '0.55';
-    star.style.left = e.clientX + 'px';
-    star.style.top  = e.clientY + 'px';
-    star.style.color = ['#60a8f0','#3d84d4','#ffb8d4','#a0c8f8'][
-      Math.floor(Date.now()/500) % 4
+async function decodeGif(file) {
+  if ("ImageDecoder" in window) {
+    try { return await decodeGifWithImageDecoder(file); }
+    catch (err) { console.warn("ImageDecoder failed:", err); }
+  }
+  const buf = await file.arrayBuffer();
+  return parseGif(buf);
+}
+
+/* ============================================================
+   LOAD
+   ============================================================ */
+async function loadFile(file) {
+  if (!file) return;
+  const isGif = file.type === "image/gif" || /\.gif$/i.test(file.name);
+  if (!file.type.startsWith("image/") && !isGif) {
+    setStatus("ไฟล์ไม่ใช่รูปภาพ", "err");
+    return;
+  }
+
+  if (isGif) {
+    setStatus("กำลังถอดรหัส GIF…");
+    try {
+      const gif = await decodeGif(file);
+      applyGif(file, gif);
+    } catch (err) {
+      console.error(err);
+      setStatus("ถอดรหัส GIF ไม่สำเร็จ: " + err.message, "err");
+    }
+    return;
+  }
+
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => { URL.revokeObjectURL(url); applySheet(file, img); };
+  img.onerror = () => { URL.revokeObjectURL(url); setStatus("โหลดรูปไม่สำเร็จ", "err"); };
+  img.src = url;
+}
+
+function applySheet(file, img) {
+  state.mode = "sheet";
+  state.img = img;
+  state.gifFrames = null;
+  state.gifDelays = null;
+  state.idx = 0; state.acc = 0;
+  invalidateCache();
+
+  els.gifBadge.classList.remove("show");
+  els.panelGif.style.display = "none";
+  els.fpsNote.textContent = "export";
+
+  els.imgInfo.innerHTML = `<b>${file.name}</b><br>${img.width} × ${img.height} px · รูปนิ่ง`;
+
+  recalc();
+  els.btnSheet.disabled = false;
+  els.btnLua.disabled = false;
+  els.btnPlayer.disabled = false;
+  setStatus(`โหลดแล้ว — ${img.width}×${img.height}px, ${state.count} เฟรม`, "ok");
+  updateBadge();
+  drawPreview();
+  drawSheet();
+}
+
+function applyGif(file, gif) {
+  state.mode = "gif";
+  state.img = null;
+  state.gifFrames = gif.frames;
+  state.gifDelays = gif.delays;
+  state.gifW = gif.width;
+  state.gifH = gif.height;
+  state.idx = 0; state.acc = 0;
+  invalidateCache();
+
+  const n = gif.frames.length;
+  els.gifBadge.classList.add("show");
+  els.gifBadgeCount.textContent = n;
+  els.panelGif.style.display = "";
+  els.fpsNote.textContent = "export";
+
+  els.gifCount.value = n;
+  els.gifCount.max = n;
+  els.gifStart.value = 0;
+  els.gifStart.max = n - 1;
+
+  state.start = 0;
+  state.count = n;
+
+  const total = gif.delays.reduce((a, b) => a + (b > 0.01 ? b : 0.1), 0);
+  const avgFps = Math.round(n / total);
+  state.fps = Math.max(1, Math.min(120, avgFps || 24));
+  els.fps.value = state.fps;
+
+  els.imgInfo.innerHTML = `<b>${file.name}</b><br>${gif.width} × ${gif.height} px · GIF ${n} เฟรม`;
+
+  const avg = total > 0 ? (n / total) : 24;
+  const { fw, fh } = frameSize();
+  els.gifHint.innerHTML =
+    `ความยาวรวม <b>${total.toFixed(2)}s</b> · FPS เฉลี่ย <b>${avg.toFixed(1)}</b> · ` +
+    `เฟรมละ <b>${fw}×${fh}px</b>`;
+
+  recalc();
+  els.btnSheet.disabled = false;
+  els.btnLua.disabled = false;
+  els.btnPlayer.disabled = false;
+  setStatus(`โหลด GIF แล้ว — ${n} เฟรม, ${total.toFixed(2)}s`, "gif");
+  updateBadge();
+  drawPreview();
+  drawSheet();
+}
+
+/* ============================================================
+   RECALC
+   ============================================================ */
+function recalc() {
+  const max = state.mode === "gif"
+    ? (state.gifFrames ? state.gifFrames.length : 1)
+    : Math.max(1, state.cols * state.rows);
+
+  state.count = Math.min(Math.max(1, state.count), max);
+  if (state.start + state.count > max) state.start = Math.max(0, max - state.count);
+  state.idx = Math.min(Math.max(0, state.idx), state.count - 1);
+
+  if (state.mode === "gif") {
+    els.gifCount.value = state.count;
+    els.gifCount.max = max;
+    els.gifStart.value = state.start;
+    els.gifStart.max = Math.max(0, max - 1);
+    applyAutoGrid();
+  } else {
+    els.count_val = state.count;
+  }
+
+  els.scrub.max = Math.max(0, state.count - 1);
+  els.scrub.value = state.idx;
+
+  invalidateCache();
+  updatePackHint();
+  updateMeta();
+}
+
+function updatePackHint() {
+  const { fw, fh } = frameSize();
+  const sheetW = fw * state.cols;
+  const sheetH = fh * state.rows;
+  const used = state.count;
+  const slots = state.cols * state.rows;
+  const waste = slots - used;
+
+  // Roblox limit: 1024×1024 ที่แนะนำ (สูงสุดจริง ~4096)
+  let limit = "";
+  if (sheetW > 1024 || sheetH > 1024) {
+    limit = ` <span style="color:var(--warn)">⚠ เกิน 1024×1024 (Roblox แนะนำ ≤1024)</span>`;
+  } else {
+    limit = ` <span style="color:var(--ok)">✓ อยู่ในขนาดที่ Roblox แนะนำ</span>`;
+  }
+
+  els.packHint.innerHTML =
+    `Sheet <b>${sheetW} × ${sheetH}px</b> · ` +
+    `grid <b>${state.cols}×${state.rows}</b> · ` +
+    `ใช้ ${used}/${slots} ช่อง` +
+    (waste > 0 ? ` <span style="color:var(--warn)">(เหลือ ${waste} ช่องว่าง)</span>` : "") +
+    limit;
+
+  els.sheetSize.textContent = `${sheetW} × ${sheetH} px`;
+  els.sheetDims.textContent = `${state.cols} × ${state.rows} grid`;
+}
+
+function updateBadge() {
+  const b = els.sharpBadge;
+  b.classList.add("show");
+  const { fw, fh } = frameSize();
+  const sheetW = fw * state.cols;
+  const sheetH = fh * state.rows;
+
+  if (sheetW > 1024 || sheetH > 1024) {
+    b.className = "badge warn sharp-badge show";
+    b.textContent = `⚠ Sheet ใหญ่ ${sheetW}×${sheetH}`;
+  } else {
+    b.className = "badge ok sharp-badge show";
+    b.textContent = `● พร้อมแพ็ค ${state.cols}×${state.rows}`;
+  }
+}
+
+function updateMeta() {
+  const { fw, fh } = frameSize();
+  const playFps = (state.mode === "gif" && els.gifUseDelays.checked)
+    ? averageFps() : state.fps;
+  const dur = (state.mode === "gif" && els.gifUseDelays.checked)
+    ? totalDuration() : state.count / state.fps;
+
+  els.pillFps.textContent   = playFps.toFixed(1) + " fps";
+  els.pillDur.textContent   = dur.toFixed(2) + " s";
+  els.pillFrame.textContent = `frame ${state.idx + 1} / ${state.count}`;
+  els.frameNum.textContent  = String(state.idx + 1);
+  els.pvSize.textContent    = `${fw} × ${fh} px / เฟรม`;
+}
+
+/* ============================================================
+   DRAW PREVIEW
+   ============================================================ */
+function drawPreview() {
+  const cv = els.preview;
+  const frames = getFrames();
+  if (!frames.length) return;
+
+  const frame = frames[Math.min(state.idx, frames.length - 1)];
+  if (!frame) return;
+
+  const fw = frame.width, fh = frame.height;
+  if (cv.width !== fw || cv.height !== fh) makeCrispContext(cv, fw, fh);
+  else {
+    const c0 = cv.getContext("2d");
+    c0.imageSmoothingEnabled = false;
+    c0.clearRect(0, 0, fw, fh);
+  }
+
+  const ctx = cv.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(frame, 0, 0);
+
+  const z = computeZoom(fw, fh);
+  cv.style.width  = Math.round(fw * z) + "px";
+  cv.style.height = Math.round(fh * z) + "px";
+  els.pvZoom.textContent = "zoom " + (Number.isInteger(z) ? z + "×" : z.toFixed(2) + "×");
+
+  updateMeta();
+}
+
+/* ============================================================
+   DRAW SHEET (ผลลัพธ์ที่จะส่งออก)
+   ============================================================ */
+function drawSheet() {
+  const cv = els.sheetCanvas;
+  const frames = getFrames();
+  if (!frames.length) return;
+
+  const { fw, fh } = frameSize();
+  const sheetW = fw * state.cols;
+  const sheetH = fh * state.rows;
+
+  if (cv.width !== sheetW || cv.height !== sheetH) makeCrispContext(cv, sheetW, sheetH);
+  else {
+    const c0 = cv.getContext("2d");
+    c0.imageSmoothingEnabled = false;
+    c0.clearRect(0, 0, sheetW, sheetH);
+  }
+
+  const ctx = cv.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  for (let i = 0; i < frames.length; i++) {
+    const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
+    ctx.drawImage(frames[i], c * fw, r * fh);
+  }
+
+  // วาดเส้นไฮไลต์เฟรมปัจจุบัน (แสดงผลเท่านั้น ไม่ได้อยู่ใน export)
+  const { c, r } = indexToCell(state.idx, state.cols, state.rows, state.order);
+  ctx.strokeStyle = "rgba(240,136,62,.9)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(c * fw + 1, r * fh + 1, fw - 2, fh - 2);
+
+  // แสดงผลย่อให้พอดี
+  const maxW = 640;
+  const z = sheetW > maxW ? maxW / sheetW : 1;
+  cv.style.width  = Math.round(sheetW * z) + "px";
+  cv.style.height = Math.round(sheetH * z) + "px";
+}
+
+/* ============================================================
+   ANIMATION
+   ============================================================ */
+let lastTime = performance.now();
+function tick(now) {
+  const dt = Math.min(0.25, (now - lastTime) / 1000);
+  lastTime = now;
+
+  if (state.playing && state.count > 1 && (state.img || state.gifFrames)) {
+    state.acc += dt;
+    let guard = 0;
+    while (guard++ < 240) {
+      const dur = frameDuration(state.idx);
+      if (state.acc < dur) break;
+      state.acc -= dur;
+      state.idx = (state.idx + 1) % state.count;
+    }
+    els.scrub.value = state.idx;
+    drawPreview();
+    drawSheet();
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ============================================================
+   BUILD SHEET CANVAS (สำหรับ export — ไม่มีไฮไลต์)
+   ============================================================ */
+function buildExportSheet() {
+  const frames = getFrames();
+  const { fw, fh } = frameSize();
+  const sheetW = fw * state.cols;
+  const sheetH = fh * state.rows;
+
+  const cv = document.createElement("canvas");
+  const ctx = makeCrispContext(cv, sheetW, sheetH);
+
+  for (let i = 0; i < frames.length; i++) {
+    const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
+    ctx.drawImage(frames[i], c * fw, r * fh);
+  }
+  return cv;
+}
+
+/* ============================================================
+   LUA CODE GENERATION
+   ============================================================ */
+
+/** โมดูลข้อมูล — config ของ sheet */
+function genLuaModule() {
+  const { fw, fh } = frameSize();
+  const sheetW = fw * state.cols;
+  const sheetH = fh * state.rows;
+  const fps = state.mode === "gif"
+    ? Math.max(1, Math.round(averageFps()))
+    : state.fps;
+
+  return `-- Frames.lua | Sprite Sheet Module (pixel-perfect)
+-- อัปโหลด sprite_sheet.${els.exportFormat.value} ขึ้น Roblox แล้วแทนที่ SHEET_ID
+-- ภาพนี้มีทุกเฟรมเรียงเป็นตาราง ${state.cols}×${state.rows}
+-- ใช้ ImageRectOffset + ImageRectSize ในการเล่น — ไม่ต้องอัปโหลดแยก
+
+return {
+\tSheetId    = "rbxassetid://0",  -- ★ ใส่ asset id ที่นี่
+\tSheetSize  = Vector2.new(${sheetW}, ${sheetH}),  -- ขนาดภาพรวม
+\tFrameSize  = Vector2.new(${fw}, ${fh}),          -- ขนาด 1 เฟรม
+\tColumns    = ${state.cols},
+\tRows       = ${state.rows},
+\tOrder      = "${state.order}",   -- "row" | "col"
+\tFps        = ${fps},
+\tLoop       = true,
+}`;
+}
+
+/** Player script — ใช้ ImageRectOffset */
+function genLuaPlayer() {
+  const { fw, fh } = frameSize();
+  const sheetW = fw * state.cols;
+  const sheetH = fh * state.rows;
+  const fps = state.mode === "gif"
+    ? Math.max(1, Math.round(averageFps()))
+    : state.fps;
+
+  return `-- VideoPlayer.lua | เล่น sprite sheet ด้วย ImageRectOffset
+-- วางไฟล์นี้ + Frames.lua ไว้ใน ReplicatedStorage
+-- วาง sprite_sheet.${els.exportFormat.value} ไว้ใน ImageLabel โดยตรง หรือใช้ SheetId
+
+local RunService = game:GetService("RunService")
+
+local VideoPlayer = {}
+VideoPlayer.__index = VideoPlayer
+
+-- ============================================================
+-- สร้าง VideoPlayer ใหม่
+-- Target = ImageLabel / ImageButton / Decal / Texture
+-- ============================================================
+function VideoPlayer.new(config)
+\tlocal self = setmetatable({}, VideoPlayer)
+
+\tself.Target    = config.Target
+\tself.SheetId   = config.SheetId or "rbxassetid://0"
+\tself.SheetSize = config.SheetSize or Vector2.new(${sheetW}, ${sheetH})
+\tself.FrameSize = config.FrameSize or Vector2.new(${fw}, ${fh})
+\tself.Columns   = config.Columns or ${state.cols}
+\tself.Rows      = config.Rows or ${state.rows}
+\tself.Order     = config.Order or "${state.order}"
+\tself.Fps       = config.Fps or ${fps}
+\tself.Loop      = config.Loop ~= false
+\tself.AutoPlay  = config.AutoPlay ~= false
+
+\tself.FrameIndex = 0
+\tself.Accum     = 0
+\tself.Playing   = false
+\tself.TotalFrames = self.Columns * self.Rows
+\tself.Connection = nil
+
+\tself:_setup()
+\tif self.AutoPlay then self:Play() end
+\treturn self
+end
+
+-- ============================================================
+-- ตั้งค่า ImageLabel ให้คมชัด
+-- ============================================================
+function VideoPlayer:_setup()
+\tself.Target.Image = self.SheetId
+\tself.Target.ImageRectSize = self.FrameSize
+
+\t-- ★ หัวใจของความคมชัด — ต้องเป็น Pixelated
+\tif self.Target:IsA("ImageLabel") or self.Target:IsA("ImageButton") then
+\t\tself.Target.ResampleMode = Enum.ResamplerMode.Pixelated
+\t\tself.Target.ScaleType    = Enum.ScaleType.Stretch
+\tend
+
+\t-- ถ้าเป็น Decal/Texture บน Part
+\tif self.Target:IsA("Decal") or self.Target:IsA("Texture") then
+\t\tself.Target.ResampleMode = Enum.ResamplerMode.Pixelated
+\tend
+
+\tself:_applyFrame()
+end
+
+-- ============================================================
+-- คำนวณ offset ของเฟรมที่ index (0-based)
+-- ============================================================
+function VideoPlayer:_applyFrame()
+\tlocal i = self.FrameIndex
+\tlocal col, row
+
+\tif self.Order == "col" then
+\t\tcol = math.floor(i / self.Rows)
+\t\trow = i % self.Rows
+\telse
+\t\tcol = i % self.Columns
+\t\trow = math.floor(i / self.Columns)
+\tend
+
+\tself.Target.ImageRectOffset = Vector2.new(
+\t\tcol * self.FrameSize.X,
+\t\trow * self.FrameSize.Y
+\t)
+end
+
+-- ============================================================
+-- API
+-- ============================================================
+function VideoPlayer:Play()
+\tif self.Playing then return end
+\tself.Playing = true
+\tself.Accum = 0
+
+\tself.Connection = RunService.RenderStepped:Connect(function(dt)
+\t\tself.Accum = self.Accum + dt * self.Fps
+\t\twhile self.Accum >= 1 do
+\t\t\tself.Accum = self.Accum - 1
+\t\t\tself:_step()
+\t\tend
+\tend)
+end
+
+function VideoPlayer:Pause()
+\tself.Playing = false
+\tif self.Connection then
+\t\tself.Connection:Disconnect()
+\t\tself.Connection = nil
+\tend
+end
+
+function VideoPlayer:Stop()
+\tself:Pause()
+\tself.FrameIndex = 0
+\tself:_applyFrame()
+end
+
+function VideoPlayer:SetFrame(i)
+\tself.FrameIndex = math.clamp(i, 0, self.TotalFrames - 1)
+\tself:_applyFrame()
+end
+
+function VideoPlayer:SetFps(fps)
+\tself.Fps = math.max(1, fps)
+end
+
+function VideoPlayer:_step()
+\tself.FrameIndex = self.FrameIndex + 1
+\tif self.FrameIndex >= self.TotalFrames then
+\t\tif self.Loop then
+\t\t\tself.FrameIndex = 0
+\t\telse
+\t\t\tself.FrameIndex = self.TotalFrames - 1
+\t\t\tself:Pause()
+\t\tend
+\tend
+\tself:_applyFrame()
+end
+
+function VideoPlayer:Destroy()
+\tself:Pause()
+end
+
+return VideoPlayer
+
+-- ============================================================
+-- วิธีใช้
+-- ============================================================
+-- local VideoPlayer = require(game.ReplicatedStorage.VideoPlayer)
+-- local data = require(game.ReplicatedStorage.Frames)
+--
+-- local vp = VideoPlayer.new{
+--     Target    = script.Parent.ImageLabel,
+--     SheetId   = data.SheetId,
+--     SheetSize = data.SheetSize,
+--     FrameSize = data.FrameSize,
+--     Columns   = data.Columns,
+--     Rows      = data.Rows,
+--     Order     = data.Order,
+--     Fps       = data.Fps,
+--     Loop      = true,
+--     AutoPlay  = true,
+-- }
+--
+-- vp:SetFrame(5)   -- ไปเฟรมที่ 5
+-- vp:Pause()
+-- vp:Play()
+-- vp:Destroy()`;
+}
+
+/* ============================================================
+   EXPORT
+   ============================================================ */
+async function exportSheet() {
+  if (!state.img && !state.gifFrames) return;
+  els.btnSheet.disabled = true;
+  setStatus("กำลังแพ็ค sprite sheet…");
+
+  try {
+    const sheet = buildExportSheet();
+    const fmt = els.exportFormat.value;
+    const quality = Math.max(0.6, Math.min(1, (+els.jpgQuality.value || 98) / 100));
+    const mime = fmt === "jpg" ? "image/jpeg" : "image/png";
+    const ext = fmt === "jpg" ? "jpg" : "png";
+
+    const blob = await new Promise(res => sheet.toBlob(res, mime, quality));
+    const sheetData = new Uint8Array(await blob.arrayBuffer());
+
+    const enc = new TextEncoder();
+    const files = [
+      { name: `sprite_sheet.${ext}`, data: sheetData },
+      { name: "Frames.lua", data: enc.encode(genLuaModule()) },
+      { name: "VideoPlayer.lua", data: enc.encode(genLuaPlayer()) },
     ];
-  });
-  document.addEventListener('mouseleave', () => { star.style.opacity = '0'; });
-})();
+
+    const { fw, fh } = frameSize();
+    const sheetW = fw * state.cols;
+    const sheetH = fh * state.rows;
+    const fps = state.mode === "gif"
+      ? Math.max(1, Math.round(averageFps()))
+      : state.fps;
+
+    files.push({
+      name: "README.txt",
+      data: enc.encode(
+`Sprite Sheet Export (Single Image + ImageRectOffset Player)
+=============================================================
+ไฟล์ในโฟลเดอร์นี้
+  sprite_sheet.${ext}   ← ภาพเดียว มีทุกเฟรมเรียงเป็นตาราง ${state.cols}×${state.rows}
+  Frames.lua          ← config ของ sheet (วางใน ReplicatedStorage)
+  VideoPlayer.lua     ← player script (วางใน ReplicatedStorage)
+
+ข้อมูล Sheet
+  ขนาดภาพรวม : ${sheetW} × ${sheetH} px
+  ขนาด 1 เฟรม : ${fw} × ${fh} px
+  ตาราง      : ${state.cols} คอลัมน์ × ${state.rows} แถว
+  จำนวนเฟรม   : ${state.count}
+  ลำดับ       : ${state.order === "row" ? "ซ้าย→ขวา, บน→ล่าง" : "บน→ล่าง, ซ้าย→ขวา"}
+  FPS แนะนำ   : ${fps}
+  รูปแบบ      : ${fmt.toUpperCase()}${fmt === "jpg" ? ` (quality ${Math.round(quality*100)}%)` : " (lossless)"}
+
+ขั้นตอน
+1. อัปโหลด sprite_sheet.${ext} ขึ้น Roblox
+   (Creator Dashboard > Development Items > Images)
+2. คัดลอก asset id มาใส่ใน Frames.lua ที่ SheetId = "rbxassetid://..."
+3. วาง Frames.lua และ VideoPlayer.lua ไว้ใน ReplicatedStorage
+4. สร้าง ImageLabel ใน StarterGui แล้วใส่ LocalScript:
+
+   local VideoPlayer = require(game.ReplicatedStorage.VideoPlayer)
+   local data = require(game.ReplicatedStorage.Frames)
+
+   local vp = VideoPlayer.new{
+       Target    = script.Parent.ImageLabel,
+       SheetId   = data.SheetId,
+       SheetSize = data.SheetSize,
+       FrameSize = data.FrameSize,
+       Columns   = data.Columns,
+       Rows      = data.Rows,
+       Order     = data.Order,
+       Fps       = data.Fps,
+       Loop      = true,
+       AutoPlay  = true,
+   }
+
+★ ความคมชัด — สิ่งที่ VideoPlayer.lua ตั้งให้อัตโนมัติ
+   ImageLabel.ResampleMode = Enum.ResamplerMode.Pixelated
+   ImageLabel.ScaleType    = Enum.ScaleType.Stretch
+
+★ แนะนำขนาด ImageLabel
+   ตั้ง Size เป็น integer multiple ของ FrameSize (${fw}×${fh})
+   เช่น FrameSize = ${fw}×${fh} → Size = UDim2.fromOffset(${fw*2}, ${fh*2}) = 2×
+   ${fw*4}×${fh*4} = 4×  (คมชัด 100% ไม่มี blur)
+`)
+    });
+
+    const zip = buildZip(files);
+    download(zip, "roblox_sprite_sheet.zip");
+
+    setStatus(
+      `เสร็จแล้ว — sprite_sheet.${ext} (${sheetW}×${sheetH}px, ${state.count} เฟรม) + Lua`,
+      "ok"
+    );
+  } catch (err) {
+    console.error(err);
+    setStatus("ส่งออกล้มเหลว: " + err.message, "err");
+  } finally {
+    els.btnSheet.disabled = false;
+  }
+}
+
+async function copyLua() {
+  try {
+    await navigator.clipboard.writeText(genLuaModule());
+    setStatus("คัดลอก Frames.lua ลงคลิปบอร์ดแล้ว", "ok");
+  } catch {
+    fallbackCopy(genLuaModule());
+    setStatus("คัดลอก Frames.lua แล้ว", "ok");
+  }
+}
+
+async function copyPlayer() {
+  try {
+    await navigator.clipboard.writeText(genLuaPlayer());
+    setStatus("คัดลอก VideoPlayer.lua ลงคลิปบอร์ดแล้ว", "ok");
+  } catch {
+    fallbackCopy(genLuaPlayer());
+    setStatus("คัดลอก VideoPlayer.lua แล้ว", "ok");
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  ta.remove();
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+els.drop.addEventListener("click", () => els.file.click());
+els.file.addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
+
+["dragenter", "dragover"].forEach(ev =>
+  els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.add("over"); })
+);
+["dragleave", "drop"].forEach(ev =>
+  els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.remove("over"); })
+);
+els.drop.addEventListener("drop", e => {
+  const f = e.dataTransfer.files[0];
+  if (f) loadFile(f);
+});
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => e.preventDefault());
+
+els.packMode.addEventListener("change", () => {
+  state.packMode = els.packMode.value;
+  els.manualRow.style.display = state.packMode === "manual" ? "" : "none";
+  if (state.packMode === "auto") applyAutoGrid();
+  recalc(); updateBadge(); drawSheet(); drawPreview();
+});
+
+els.cols.addEventListener("input", () => {
+  state.cols = Math.max(1, Math.min(64, +els.cols.value || 1));
+  recalc(); updateBadge(); drawSheet(); drawPreview();
+});
+els.rows.addEventListener("input", () => {
+  state.rows = Math.max(1, Math.min(64, +els.rows.value || 1));
+  recalc(); updateBadge(); drawSheet(); drawPreview();
+});
+els.order.addEventListener("change", () => {
+  state.order = els.order.value;
+  invalidateCache(); drawSheet(); drawPreview();
+});
+
+els.gifCount.addEventListener("input", () => {
+  state.count = Math.max(1, +els.gifCount.value || 1);
+  recalc(); updateBadge(); drawSheet(); drawPreview();
+});
+els.gifStart.addEventListener("input", () => {
+  state.start = Math.max(0, +els.gifStart.value || 0);
+  recalc(); updateBadge(); drawSheet(); drawPreview();
+});
+els.gifUseDelays.addEventListener("change", () => { state.acc = 0; updateMeta(); });
+
+els.fps.addEventListener("input", () => {
+  state.fps = Math.max(1, Math.min(120, +els.fps.value || 24));
+  updateMeta();
+});
+els.zoom.addEventListener("change", () => {
+  state.zoom = els.zoom.value;
+  drawPreview();
+});
+els.scrub.addEventListener("input", () => {
+  state.idx = +els.scrub.value;
+  state.acc = 0;
+  state.playing = false;
+  els.btnPlay.textContent = "▶ Play";
+  drawPreview(); drawSheet();
+});
+
+els.exportFormat.addEventListener("change", () => {
+  const isJpg = els.exportFormat.value === "jpg";
+  els.jpgQuality.disabled = !isJpg;
+});
+
+els.btnPlay.addEventListener("click", () => {
+  state.playing = !state.playing;
+  els.btnPlay.textContent = state.playing ? "⏸ Pause" : "▶ Play";
+});
+els.btnNext.addEventListener("click", () => {
+  state.playing = false; els.btnPlay.textContent = "▶ Play";
+  state.idx = (state.idx + 1) % state.count;
+  els.scrub.value = state.idx; drawPreview(); drawSheet();
+});
+els.btnPrev.addEventListener("click", () => {
+  state.playing = false; els.btnPlay.textContent = "▶ Play";
+  state.idx = (state.idx - 1 + state.count) % state.count;
+  els.scrub.value = state.idx; drawPreview(); drawSheet();
+});
+els.btnFirst.addEventListener("click", () => {
+  state.idx = 0; state.acc = 0;
+  els.scrub.value = 0; drawPreview(); drawSheet();
+});
+
+els.btnSheet.addEventListener("click", exportSheet);
+els.btnLua.addEventListener("click", copyLua);
+els.btnPlayer.addEventListener("click", copyPlayer);
+
+document.addEventListener("keydown", e => {
+  const tag = e.target.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  if (e.code === "Space") { e.preventDefault(); els.btnPlay.click(); }
+  if (e.code === "ArrowRight") els.btnNext.click();
+  if (e.code === "ArrowLeft")  els.btnPrev.click();
+});
+
+els.btnPlay.textContent = "⏸ Pause";
+els.jpgQuality.disabled = true;
+
+window.addEventListener("resize", () => {
+  if (state.zoom === "auto") drawPreview();
+});
 </script>
 </body>
 </html>
