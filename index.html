@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GIF / Sheet → Single Sprite Sheet (ทุกเฟรมในภาพเดียว)</title>
+<title>GIF / Sheet → Sprite Sheet (แต่ละช่อง = 1 เฟรม = 1 ภาพย่อย)</title>
 <style>
   :root{
     --bg:#0e1116; --panel:#161b22; --panel2:#1c2430; --line:#2a3441;
     --fg:#e6edf3; --dim:#8b98a5; --accent:#58a6ff; --ok:#3fb950;
-    --err:#f85149; --gif:#a371f7; --warn:#d29922;
+    --err:#f85149; --gif:#a371f7; --warn:#d29922; --cell:#58a6ff;
   }
   *{box-sizing:border-box}
   body{
@@ -17,47 +17,60 @@
     font-size:14px; line-height:1.5;
   }
   header{
-    padding:16px 22px; border-bottom:1px solid var(--line);
-    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+    padding:14px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
     background:linear-gradient(180deg,#161b22,#0e1116);
   }
-  header h1{margin:0; font-size:16px}
-  header .sub{color:var(--dim); font-size:12.5px}
-  .app{
-    display:grid; grid-template-columns:360px minmax(0,1fr);
-    gap:16px; padding:16px; max-width:1600px; margin:0 auto; align-items:start;
+  header h1{margin:0; font-size:15px}
+  header .sub{color:var(--dim); font-size:12px}
+  .badge{
+    display:none; align-items:center; gap:5px;
+    font-size:11px; padding:3px 9px; border-radius:20px;
   }
-  @media(max-width:900px){ .app{grid-template-columns:1fr} }
+  .badge.show{display:inline-flex}
+  .badge.gif{background:#1a1430; border:1px solid #4a3070; color:var(--gif)}
+  .badge.gif::before{content:"●"; font-size:8px}
+  .badge.ok{background:#0e2a17; border:1px solid #1f4a2b; color:var(--ok)}
+  .badge.ok::before{content:"●"; font-size:8px}
+
+  .app{
+    display:grid; grid-template-columns:340px minmax(0,1fr);
+    gap:14px; padding:14px; max-width:1700px; margin:0 auto; align-items:start;
+  }
+  @media(max-width:1000px){ .app{grid-template-columns:1fr} }
+
   .panel{
     background:var(--panel); border:1px solid var(--line);
-    border-radius:10px; padding:14px;
+    border-radius:10px; padding:12px;
   }
-  .panel + .panel{margin-top:14px}
+  .panel + .panel{margin-top:12px}
   .panel h2{
-    margin:0 0 12px; font-size:12px; text-transform:uppercase;
+    margin:0 0 10px; font-size:11.5px; text-transform:uppercase;
     letter-spacing:.9px; color:var(--dim); font-weight:600;
   }
+
   .drop{
-    border:2px dashed var(--line); border-radius:10px; padding:24px 14px;
+    border:2px dashed var(--line); border-radius:10px; padding:22px 12px;
     text-align:center; color:var(--dim); cursor:pointer;
     transition:.15s; background:var(--panel2);
   }
   .drop:hover,.drop.over{border-color:var(--accent); color:var(--fg); background:#1b2531}
-  .drop strong{color:var(--accent); display:block; margin-bottom:4px; font-size:14px}
-  .row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px}
+  .drop strong{color:var(--accent); display:block; margin-bottom:4px; font-size:13.5px}
+
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px}
   .row.one{grid-template-columns:1fr}
-  label{display:block; font-size:11.5px; color:var(--dim); margin-bottom:4px}
+  label{display:block; font-size:11px; color:var(--dim); margin-bottom:3px}
   input[type=number],input[type=text],select{
-    width:100%; padding:7px 9px; background:var(--panel2); color:var(--fg);
-    border:1px solid var(--line); border-radius:6px; font-size:13px; font-family:inherit;
+    width:100%; padding:6px 8px; background:var(--panel2); color:var(--fg);
+    border:1px solid var(--line); border-radius:6px; font-size:12.5px; font-family:inherit;
   }
   input:focus,select:focus{outline:none; border-color:var(--accent)}
   input[type=range]{width:100%; accent-color:var(--accent)}
-  .check{display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer}
+  .check{display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer}
   button{
-    padding:8px 12px; border-radius:6px; border:1px solid var(--line);
+    padding:7px 11px; border-radius:6px; border:1px solid var(--line);
     background:var(--panel2); color:var(--fg); cursor:pointer;
-    font-size:12.5px; font-family:inherit; font-weight:500; transition:.12s;
+    font-size:12px; font-family:inherit; font-weight:500; transition:.12s;
   }
   button:hover:not(:disabled){background:#243040; border-color:#3a4a5e}
   button:disabled{opacity:.4; cursor:not-allowed}
@@ -65,17 +78,29 @@
   button.primary:hover:not(:disabled){background:#2d7ff9}
   button.ok{background:#238636; border-color:#238636; color:#fff}
   button.ok:hover:not(:disabled){background:#2ea043}
-  .btns{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .btns{display:grid; grid-template-columns:1fr 1fr; gap:6px}
   .btns.full{grid-template-columns:1fr}
-  .stage{display:flex; flex-direction:column; gap:14px}
+
+  .stage{display:flex; flex-direction:column; gap:12px}
+
   .canvas-wrap{
     background:var(--panel); border:1px solid var(--line); border-radius:10px;
-    padding:14px;
+    padding:12px;
   }
+  .canvas-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:8px; gap:10px; flex-wrap:wrap;
+  }
+  .canvas-title{font-size:13px; font-weight:600; color:var(--fg)}
+  .canvas-title .accent{color:var(--accent)}
+  .canvas-meta{font-size:11.5px; color:var(--dim); font-variant-numeric:tabular-nums}
+  .canvas-meta b{color:var(--fg)}
+
   .canvas-box{
     display:flex; align-items:center; justify-content:center;
-    width:100%; min-height:120px; overflow:auto; padding:6px;
-    background:#0a0d12; border-radius:6px;
+    width:100%; overflow:auto; padding:6px;
+    background:#080a0e; border-radius:6px;
+    min-height:120px;
   }
   canvas{
     display:block;
@@ -83,13 +108,51 @@
     image-rendering: crisp-edges;
     image-rendering: -moz-crisp-edges;
     -ms-interpolation-mode: nearest-neighbor;
-    background:
-      repeating-conic-gradient(#1b2027 0% 25%, #222933 0% 50%) 50%/18px 18px;
   }
-  #preview,#sheetCanvas{border:1px solid var(--line)}
-  .meta{font-size:12px; color:var(--dim); margin-bottom:8px; font-variant-numeric:tabular-nums}
-  .meta b{color:var(--fg); font-weight:600}
-  .bar{display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap}
+  #currentFrame{
+    background:
+      repeating-conic-gradient(#2a2f38 0% 25%, #232830 0% 50%) 50%/16px 16px;
+  }
+  #sheetCanvas{
+    background:
+      repeating-conic-gradient(#2a2f38 0% 25%, #232830 0% 50%) 50%/20px 20px;
+  }
+
+  /* ★ กล่อง "ช่อง" แต่ละช่อง — วาดทับเพื่อให้เห็นชัดว่าช่องไหน = เฟรมไหน */
+  .cell-grid-overlay{
+    position:absolute; inset:0; pointer-events:none;
+  }
+
+  .sheet-container{
+    position:relative; display:inline-block; line-height:0;
+  }
+
+  /* Filmstrip */
+  .filmstrip{
+    display:flex; gap:4px; overflow-x:auto; padding:6px;
+    background:#080a0e; border-radius:6px;
+    border:1px solid var(--line); margin-top:8px;
+    min-height:70px; align-items:center;
+    scrollbar-width:thin;
+  }
+  .filmstrip::-webkit-scrollbar{height:8px}
+  .filmstrip::-webkit-scrollbar-thumb{background:#2a3441; border-radius:4px}
+  .filmstrip canvas{
+    border:2px solid #2a3441; border-radius:3px;
+    cursor:pointer; flex-shrink:0; display:block;
+    image-rendering: pixelated;
+    transition:.1s;
+  }
+  .filmstrip canvas:hover{border-color:var(--accent); transform:translateY(-2px)}
+  .filmstrip canvas.active{
+    border-color:#f0883e; box-shadow:0 0 0 1px #f0883e, 0 0 8px rgba(240,136,62,.5);
+  }
+  .filmstrip-empty{
+    color:var(--dim); font-size:12px; padding:16px;
+    text-align:center; width:100%;
+  }
+
+  .bar{display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap}
   .pill{
     font-size:11px; padding:2px 8px; border-radius:20px;
     background:var(--panel2); border:1px solid var(--line); color:var(--dim);
@@ -97,98 +160,86 @@
   .pill.ok{color:var(--ok); border-color:#1f4a2b}
   .pill.gif{color:var(--gif); border-color:#4a3070; background:#1a1430}
   .pill.warn{color:var(--warn); border-color:#5c4500; background:#2a2000}
+  .pill.accent{color:var(--accent); border-color:#1f4a80; background:#0d1f33}
+
   .status{
-    font-size:12px; color:var(--dim); min-height:18px;
-    padding:8px 10px; border-radius:6px; background:var(--panel2);
+    font-size:11.5px; color:var(--dim); min-height:18px;
+    padding:7px 10px; border-radius:6px; background:var(--panel2);
     border:1px solid var(--line); word-break:break-word;
   }
   .status.ok{color:var(--ok)}
   .status.err{color:var(--err)}
   .status.gif{color:var(--gif)}
   .status.warn{color:var(--warn)}
+
   code{
     background:#0d1117; padding:1px 5px; border-radius:4px;
-    font-family:ui-monospace,Consolas,monospace; font-size:12px; color:var(--accent);
+    font-family:ui-monospace,Consolas,monospace; font-size:11.5px; color:var(--accent);
   }
-  .hint{font-size:11.5px; color:var(--dim); line-height:1.65; margin-top:10px}
+  .hint{font-size:11.5px; color:var(--dim); line-height:1.65; margin-top:8px}
   .hint b{color:var(--fg)}
-  .badge{
-    display:none; align-items:center; gap:6px;
-    font-size:11px; padding:3px 9px; border-radius:20px;
-  }
-  .badge.show{display:inline-flex}
-  .badge.gif{background:#1a1430; border:1px solid #4a3070; color:var(--gif)}
-  .badge.ok{background:#0e2a17; border:1px solid #1f4a2b; color:var(--ok)}
-  .badge.warn{background:#2a2000; border:1px solid #5c4500; color:var(--warn)}
-  .gif-badge::before,.sharp-badge::before{content:"●"; font-size:8px}
 
-  /* Filmstrip */
-  .filmstrip{
-    display:flex; gap:4px; overflow-x:auto; padding:6px;
-    background:#0a0d12; border-radius:6px;
-    border:1px solid var(--line); margin-top:10px;
-    min-height:80px; align-items:center;
+  /* Debug list */
+  .frame-list{
+    max-height:180px; overflow-y:auto; margin-top:8px;
+    background:#0a0d12; border:1px solid var(--line); border-radius:6px;
+    font-family:ui-monospace,Consolas,monospace; font-size:11px;
   }
-  .filmstrip canvas{
-    border:1px solid var(--line); border-radius:2px;
-    cursor:pointer; flex-shrink:0;
-    image-rendering: pixelated;
+  .frame-row{
+    display:flex; align-items:center; gap:8px;
+    padding:4px 8px; border-bottom:1px solid #1a1f28;
+    cursor:pointer;
   }
-  .filmstrip canvas.active{
-    border-color:#f0883e; box-shadow:0 0 0 1px #f0883e;
-  }
-  .filmstrip canvas:hover{border-color:var(--accent)}
-  .filmstrip-empty{
-    color:var(--dim); font-size:12px; padding:20px;
-    text-align:center; width:100%;
-  }
+  .frame-row:last-child{border-bottom:none}
+  .frame-row:hover{background:#141922}
+  .frame-row.active{background:#1f2a3a; border-left:3px solid #f0883e}
+  .frame-row .num{color:var(--dim); min-width:36px}
+  .frame-row .pos{color:var(--accent); min-width:80px}
+  .frame-row .hash{color:#5a6a7a; font-size:10px}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🎞️ GIF / Sheet → Single Sprite Sheet (ทุกเฟรมในภาพเดียว)</h1>
-  <span class="sub">แพ็คทุกเฟรมลงใน PNG เดียว · เล่นด้วย ImageRectOffset</span>
-  <span class="badge gif gif-badge" id="gifBadge">GIF: <b id="gifBadgeCount">0</b> เฟรม</span>
-  <span class="badge ok sharp-badge" id="sharpBadge">● พร้อมแพ็ค</span>
+  <h1>🎞️ GIF / Sheet → Sprite Sheet</h1>
+  <span class="sub">แต่ละช่อง = 1 เฟรม = ภาพย่อยจริง · รวมทุกเฟรมใน PNG เดียว</span>
+  <span class="badge gif" id="gifBadge">GIF: <b id="gifBadgeCount">0</b> เฟรม</span>
+  <span class="badge ok" id="readyBadge">● พร้อมแพ็ค</span>
 </header>
 
 <div class="app">
 
-  <!-- ============ LEFT ============ -->
+  <!-- ================= LEFT ================= -->
   <div>
 
     <div class="panel">
-      <h2>1 · โหลดภาพ / GIF</h2>
+      <h2>1 · โหลด GIF / Sprite Sheet</h2>
       <div class="drop" id="drop">
         <strong>คลิก หรือลากไฟล์มาวาง</strong>
-        PNG · JPG · WEBP · GIF (แอนิเมชัน)
+        GIF แอนิเมชัน · PNG / JPG / WEBP (sprite sheet)
       </div>
       <input type="file" id="file" accept="image/*,.gif" hidden>
-      <div class="meta" id="imgInfo" style="margin-top:10px">ยังไม่มีภาพ</div>
+      <div class="canvas-meta" id="imgInfo" style="margin-top:8px; text-align:center">ยังไม่มีภาพ</div>
     </div>
 
     <div class="panel">
-      <h2>2 · จัดวาง Sprite Sheet</h2>
+      <h2>2 · จัดวางตาราง</h2>
       <div class="row">
         <div>
-          <label>รูปแบบตาราง</label>
-          <select id="packMode">
-            <option value="auto">Auto (เกือบจัตุรัส)</option>
-            <option value="manual">กำหนดเอง</option>
-          </select>
+          <label>Columns (คอลัมน์)</label>
+          <input type="number" id="cols" value="8" min="1" max="64">
         </div>
         <div>
-          <label>ลำดับการวาง</label>
-          <select id="order">
-            <option value="row">ซ้าย → ขวา, บน → ล่าง</option>
-            <option value="col">บน → ล่าง, ซ้าย → ขวา</option>
-          </select>
+          <label>Rows (แถว)</label>
+          <input type="number" id="rows" value="8" min="1" max="64">
         </div>
       </div>
-      <div class="row" id="manualRow" style="display:none">
-        <div><label>Columns</label><input type="number" id="cols" value="8" min="1" max="64"></div>
-        <div><label>Rows</label><input type="number" id="rows" value="8" min="1" max="64"></div>
+      <div class="row one">
+        <label>ลำดับการวาง</label>
+        <select id="order">
+          <option value="row">ซ้าย → ขวา, บน → ล่าง</option>
+          <option value="col">บน → ล่าง, ซ้าย → ขวา</option>
+        </select>
       </div>
       <div class="hint" id="packHint">—</div>
     </div>
@@ -196,11 +247,11 @@
     <div class="panel" id="panelGif" style="display:none">
       <h2>3 · ตั้งค่า GIF</h2>
       <div class="row">
-        <div><label>จำนวนเฟรมที่ใช้</label><input type="number" id="gifCount" value="0" min="1"></div>
+        <div><label>ใช้กี่เฟรม</label><input type="number" id="gifCount" value="0" min="1"></div>
         <div><label>เริ่มที่เฟรม</label><input type="number" id="gifStart" value="0" min="0"></div>
       </div>
       <div class="row one">
-        <label class="check"><input type="checkbox" id="gifUseDelays" checked> ใช้ความเร็วจาก GIF (per-frame delay)</label>
+        <label class="check"><input type="checkbox" id="gifUseDelays" checked> ใช้ความเร็วจาก GIF</label>
       </div>
       <div class="hint" id="gifHint">—</div>
     </div>
@@ -209,11 +260,11 @@
       <h2>4 · เล่นพรีวิว</h2>
       <div class="row">
         <div>
-          <label>FPS <span id="fpsNote" class="pill" style="text-transform:none">export</span></label>
+          <label>FPS</label>
           <input type="number" id="fps" value="24" min="1" max="120">
         </div>
         <div>
-          <label>Zoom (พรีวิว)</label>
+          <label>ขนาดพรีวิว</label>
           <select id="zoom">
             <option value="auto">Auto (integer)</option>
             <option value="1">1×</option>
@@ -222,23 +273,23 @@
             <option value="4">4×</option>
             <option value="6">6×</option>
             <option value="8">8×</option>
-            <option value="12">12×</option>
           </select>
         </div>
       </div>
       <div class="row one">
-        <div><label>Frame <span id="frameNum" class="pill">1</span></label>
-          <input type="range" id="scrub" min="0" max="63" value="0" style="margin-top:11px">
+        <div>
+          <label>Frame <span id="frameNum" class="pill">1</span></label>
+          <input type="range" id="scrub" min="0" max="63" value="0" style="margin-top:8px">
         </div>
       </div>
       <div class="btns">
         <button id="btnPlay" class="primary">⏸ Pause</button>
-        <button id="btnPrev">◀ ก่อนหน้า</button>
+        <button id="btnPrev">◀ ก่อน</button>
       </div>
-      <div style="height:8px"></div>
+      <div style="height:6px"></div>
       <div class="btns">
         <button id="btnNext">ถัดไป ▶</button>
-        <button id="btnFirst">⏮ เริ่มใหม่</button>
+        <button id="btnFirst">⏮ เริ่ม</button>
       </div>
     </div>
 
@@ -249,7 +300,7 @@
           <label>รูปแบบ</label>
           <select id="exportFormat">
             <option value="png">PNG (lossless)</option>
-            <option value="jpg">JPEG (เล็กกว่า)</option>
+            <option value="jpg">JPEG</option>
           </select>
         </div>
         <div>
@@ -258,52 +309,86 @@
         </div>
       </div>
       <div class="row one">
-        <label class="check"><input type="checkbox" id="showFrameNumbers" checked> แสดงเลขเฟรมในพรีวิว (ไม่ติดไปกับไฟล์ที่ export)</label>
+        <label class="check"><input type="checkbox" id="showCellLabels" checked> แสดงเลขเฟรมในช่อง (พรีวิวเท่านั้น)</label>
+      </div>
+      <div class="row one">
+        <label class="check"><input type="checkbox" id="showCellBorders" checked> แสดงเส้นขอบแต่ละช่อง</label>
       </div>
       <div class="btns full">
         <button id="btnSheet" class="ok" disabled>⬇ ดาวน์โหลด Sprite Sheet + Lua</button>
       </div>
-      <div style="height:8px"></div>
+      <div style="height:6px"></div>
       <div class="btns">
-        <button id="btnLua" disabled>📋 คัดลอก Lua</button>
-        <button id="btnPlayer" disabled>📋 คัดลอก Player</button>
+        <button id="btnLua" disabled>📋 Frames.lua</button>
+        <button id="btnPlayer" disabled>📋 VideoPlayer.lua</button>
       </div>
-      <div style="height:12px"></div>
+      <div style="height:10px"></div>
       <div class="status" id="status">รอโหลดภาพ…</div>
     </div>
 
   </div>
 
-  <!-- ============ RIGHT ============ -->
+  <!-- ================= RIGHT ================= -->
   <div class="stage">
 
-    <!-- Animation preview -->
+    <!-- ★★★ เฟรมปัจจุบัน — ภาพเดียว ขยายใหญ่ ★★★ -->
     <div class="canvas-wrap">
-      <div class="meta">พรีวิวแอนิเมชัน (1 เฟรม) · <b id="pvSize">—</b> · <span id="pvZoom">—</span></div>
-      <div class="canvas-box"><canvas id="preview" width="256" height="256"></canvas></div>
+      <div class="canvas-head">
+        <div class="canvas-title">
+          🖼️ เฟรมปัจจุบัน <span class="accent" id="curFrameTitle">#1</span>
+        </div>
+        <div class="canvas-meta"><b id="curFrameSize">—</b> · <span id="curFrameZoom">—</span></div>
+      </div>
+      <div class="canvas-box" style="min-height:200px">
+        <canvas id="currentFrame" width="256" height="256"></canvas>
+      </div>
       <div class="bar">
         <span class="pill" id="pillFps">—</span>
         <span class="pill" id="pillDur">—</span>
-        <span class="pill" id="pillFrame">—</span>
+        <span class="pill accent" id="pillFrame">—</span>
       </div>
     </div>
 
-    <!-- Sheet preview -->
+    <!-- ★★★ Sprite Sheet ที่แพ็คแล้ว — เห็นทุกช่องชัดเจน ★★★ -->
     <div class="canvas-wrap">
-      <div class="meta">
-        📦 Sprite Sheet ที่จะส่งออก — <b>ทุกเฟรมในภาพเดียว</b> ·
-        <b id="sheetSize">—</b> · <span id="sheetDims">—</span>
+      <div class="canvas-head">
+        <div class="canvas-title">
+          📦 Sprite Sheet <span class="accent">(ทุกเฟรมในภาพเดียว)</span>
+        </div>
+        <div class="canvas-meta">
+          <b id="sheetSize">—</b> · <span id="sheetDims">—</span>
+        </div>
       </div>
-      <div class="canvas-box" style="max-height:520px">
-        <canvas id="sheetCanvas" width="1" height="1"></canvas>
+      <div class="canvas-box" style="max-height:560px">
+        <div class="sheet-container">
+          <canvas id="sheetCanvas" width="1" height="1"></canvas>
+        </div>
+      </div>
+      <div class="hint">
+        ⬆ ภาพด้านบนคือ <b>ภาพเดียว</b> ที่จะส่งออก — แต่ละช่องในตารางคือ
+        <b>1 เฟรมของแอนิเมชัน</b> (ภาพย่อยจริง ๆ ไม่ใช่ภาพเดียวกันซ้ำ)
+        Roblox จะเล่นด้วย <code>ImageRectOffset</code> ใน ImageLabel เดียว
+      </div>
+    </div>
+
+    <!-- Filmstrip -->
+    <div class="canvas-wrap">
+      <div class="canvas-head">
+        <div class="canvas-title">🎞️ ทุกเฟรมที่แพ็คแล้ว <span class="accent" id="stripCount">0</span></div>
+        <div class="canvas-meta">คลิกเพื่อดู · <span id="stripVerify">—</span></div>
       </div>
       <div class="filmstrip" id="filmstrip">
-        <div class="filmstrip-empty">โหลดภาพเพื่อดูตัวอย่างทุกเฟรม</div>
+        <div class="filmstrip-empty">โหลดภาพเพื่อดูตัวอย่าง</div>
       </div>
-      <div class="hint" id="sheetHint">
-        ภาพด้านบนคือ <b>ภาพเดียว</b> ที่จะได้ — ทุกเฟรมเรียงเป็นตาราง
-        Roblox เล่นด้วย <code>ImageRectOffset</code> + <code>ImageRectSize</code>
-        ใน ImageLabel เดียว ไม่ต้องอัปโหลดแยก
+    </div>
+
+    <!-- Debug / Frame list -->
+    <div class="canvas-wrap">
+      <div class="canvas-head">
+        <div class="canvas-title">🔍 รายการเฟรม (ตรวจสอบว่าทุกช่องต่างกัน)</div>
+      </div>
+      <div class="frame-list" id="frameList">
+        <div style="padding:12px; color:var(--dim); text-align:center; font-size:12px">ยังไม่มีเฟรม</div>
       </div>
     </div>
 
@@ -318,26 +403,24 @@
    ============================================================ */
 const state = {
   mode: "sheet",
-  img: null,              // HTMLImageElement (โหมด sheet)
-  gifFrames: null,        // [canvas] (โหมด gif)
-  gifDelays: null,        // [seconds]
+  img: null,
+  gifFrames: null,
+  gifDelays: null,
   gifW: 0, gifH: 0,
   cols: 8, rows: 8,
   count: 64, start: 0,
   order: "row",
-  packMode: "auto",
   fps: 24,
   idx: 0, acc: 0,
   playing: true,
   zoom: "auto",
+  fileName: "",
 };
 
 const els = {
   drop:      document.getElementById("drop"),
   file:      document.getElementById("file"),
   imgInfo:   document.getElementById("imgInfo"),
-  packMode:  document.getElementById("packMode"),
-  manualRow: document.getElementById("manualRow"),
   cols:      document.getElementById("cols"),
   rows:      document.getElementById("rows"),
   order:     document.getElementById("order"),
@@ -349,20 +432,22 @@ const els = {
   gifHint:   document.getElementById("gifHint"),
   gifBadge:  document.getElementById("gifBadge"),
   gifBadgeCount: document.getElementById("gifBadgeCount"),
-  sharpBadge: document.getElementById("sharpBadge"),
+  readyBadge: document.getElementById("readyBadge"),
   fps:       document.getElementById("fps"),
-  fpsNote:   document.getElementById("fpsNote"),
   zoom:      document.getElementById("zoom"),
   scrub:     document.getElementById("scrub"),
   frameNum:  document.getElementById("frameNum"),
-  preview:   document.getElementById("preview"),
+  currentFrame: document.getElementById("currentFrame"),
+  curFrameTitle: document.getElementById("curFrameTitle"),
+  curFrameSize: document.getElementById("curFrameSize"),
+  curFrameZoom: document.getElementById("curFrameZoom"),
   sheetCanvas: document.getElementById("sheetCanvas"),
-  filmstrip: document.getElementById("filmstrip"),
-  pvSize:    document.getElementById("pvSize"),
-  pvZoom:    document.getElementById("pvZoom"),
   sheetSize: document.getElementById("sheetSize"),
   sheetDims: document.getElementById("sheetDims"),
-  sheetHint: document.getElementById("sheetHint"),
+  filmstrip: document.getElementById("filmstrip"),
+  stripCount: document.getElementById("stripCount"),
+  stripVerify: document.getElementById("stripVerify"),
+  frameList: document.getElementById("frameList"),
   pillFps:   document.getElementById("pillFps"),
   pillDur:   document.getElementById("pillDur"),
   pillFrame: document.getElementById("pillFrame"),
@@ -372,7 +457,8 @@ const els = {
   btnFirst:  document.getElementById("btnFirst"),
   exportFormat: document.getElementById("exportFormat"),
   jpgQuality: document.getElementById("jpgQuality"),
-  showFrameNumbers: document.getElementById("showFrameNumbers"),
+  showCellLabels: document.getElementById("showCellLabels"),
+  showCellBorders: document.getElementById("showCellBorders"),
   btnSheet:  document.getElementById("btnSheet"),
   btnLua:    document.getElementById("btnLua"),
   btnPlayer: document.getElementById("btnPlayer"),
@@ -392,7 +478,6 @@ function indexToCell(i, cols, rows, order) {
   return { c: i % cols, r: Math.floor(i / cols) };
 }
 
-/** ขนาดเฟรม (คำนวณจาก source ของแต่ละโหมด) */
 function frameSize() {
   if (state.mode === "gif" && state.gifFrames && state.gifFrames[0]) {
     return { fw: state.gifFrames[0].width, fh: state.gifFrames[0].height };
@@ -425,7 +510,7 @@ function averageFps() {
   return d > 0 ? state.count / d : state.fps;
 }
 
-function makeCrispContext(canvas, w, h) {
+function makeCrisp(canvas, w, h) {
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext("2d", { alpha: true });
   ctx.imageSmoothingEnabled = false;
@@ -434,13 +519,6 @@ function makeCrispContext(canvas, w, h) {
   ctx.msImageSmoothingEnabled = false;
   ctx.oImageSmoothingEnabled = false;
   return ctx;
-}
-
-function computeZoom(fw, fh) {
-  if (state.zoom !== "auto") return parseFloat(state.zoom);
-  const maxW = 600, maxH = 400;
-  const z = Math.floor(Math.min(maxW / fw, maxH / fh));
-  return z >= 1 ? z : Math.min(maxW / fw, maxH / fh);
 }
 
 function download(blob, filename) {
@@ -453,24 +531,7 @@ function download(blob, filename) {
 }
 
 /* ============================================================
-   AUTO GRID
-   ============================================================ */
-function computeAutoGrid(n) {
-  let best = { cols: n, rows: 1, score: Infinity };
-  for (let c = 1; c <= n; c++) {
-    const r = Math.ceil(n / c);
-    if (c * r < n) continue;
-    const aspect = c / r;
-    const waste = c * r - n;
-    // ให้คะแนนความสมดุล + ช่องว่าง
-    const score = Math.abs(Math.log(aspect)) * 3 + waste * 0.5;
-    if (score < best.score) best = { cols: c, rows: r, score };
-  }
-  return best;
-}
-
-/* ============================================================
-   FRAME CACHE — คืน [canvas] ของทุกเฟรม
+   FRAME EXTRACTION — คืน [canvas] ของทุกเฟรม (ภาพย่อยจริง)
    ============================================================ */
 let _frames = null;
 let _framesKey = "";
@@ -487,14 +548,14 @@ function getFrames() {
   const out = [];
 
   if (state.mode === "gif" && state.gifFrames) {
-    // โหมด GIF: คืน canvas ที่มีอยู่แล้ว
+    // ★ โหมด GIF: แต่ละเฟรมคือ canvas เต็มของ GIF
     for (let i = 0; i < state.count; i++) {
       const f = state.gifFrames[state.start + i];
       if (!f) break;
       out.push(f);
     }
   } else if (state.img) {
-    // โหมด Sheet: ตัดจากภาพต้นฉบับ
+    // ★ โหมด Sheet: ตัดจากภาพต้นฉบับ → แต่ละชิ้นเป็น canvas ภาพย่อยจริง
     const { fw, fh } = frameSize();
     const total = state.cols * state.rows;
     for (let i = 0; i < state.count; i++) {
@@ -502,8 +563,7 @@ function getFrames() {
       if (g >= total) break;
       const { c, r } = indexToCell(g, state.cols, state.rows, state.order);
       const cv = document.createElement("canvas");
-      const ctx = makeCrispContext(cv, fw, fh);
-      // ★ pixel-perfect 1:1 copy
+      const ctx = makeCrisp(cv, fw, fh);
       ctx.drawImage(state.img, c * fw, r * fh, fw, fh, 0, 0, fw, fh);
       out.push(cv);
     }
@@ -515,99 +575,342 @@ function getFrames() {
 }
 
 function invalidateCache() {
-  _frames = null;
-  _framesKey = "";
-  _sheetBase = null;
-  _sheetBaseKey = "";
+  _frames = null; _framesKey = "";
+  _sheetBase = null; _sheetBaseKey = "";
 }
 
 /* ============================================================
-   RECALC — แก้บั๊กหลัก
+   HASH เฟรม (เพื่อตรวจสอบว่าทุกช่องต่างกันจริง)
    ============================================================ */
-function recalc() {
-  if (state.mode === "sheet") {
-    // ★ โหมด Sheet: จำนวนเฟรม = cols × rows เสมอ
-    state.count = state.cols * state.rows;
-    state.start = 0;
-    state.idx = Math.min(state.idx, state.count - 1);
-    if (state.idx < 0) state.idx = 0;
-    els.scrub.max = Math.max(0, state.count - 1);
-    els.scrub.value = state.idx;
-  } else {
-    // โหมด GIF: จำนวนเฟรมเลือกได้
-    const max = state.gifFrames ? state.gifFrames.length : 1;
-    state.count = Math.min(Math.max(1, state.count), max);
-    if (state.start + state.count > max) {
-      state.start = Math.max(0, max - state.count);
-    }
-    state.idx = Math.min(Math.max(0, state.idx), state.count - 1);
-
-    els.gifCount.value = state.count;
-    els.gifCount.max = max;
-    els.gifStart.value = state.start;
-    els.gifStart.max = Math.max(0, max - 1);
-    els.scrub.max = Math.max(0, state.count - 1);
-    els.scrub.value = state.idx;
-
-    // Auto grid ตามจำนวนเฟรม
-    if (state.packMode === "auto") {
-      const g = computeAutoGrid(state.count);
-      state.cols = g.cols;
-      state.rows = g.rows;
-      els.cols.value = state.cols;
-      els.rows.value = state.rows;
+function hashFrame(canvas, sampleStep = 4) {
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  const data = ctx.getImageData(0, 0, w, h).data;
+  let hash = 5381;
+  for (let y = 0; y < h; y += sampleStep) {
+    for (let x = 0; x < w; x += sampleStep) {
+      const i = (y * w + x) * 4;
+      hash = ((hash << 5) + hash) ^ data[i];
+      hash = ((hash << 5) + hash) ^ data[i + 1];
+      hash = ((hash << 5) + hash) ^ data[i + 2];
+      hash = ((hash << 5) + hash) ^ data[i + 3];
     }
   }
-
-  invalidateCache();
-  updatePackHint();
-  updateMeta();
-  updateBadge();
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
-function updatePackHint() {
+/* ============================================================
+   DRAW: เฟรมปัจจุบัน (ขยายใหญ่)
+   ============================================================ */
+function drawCurrentFrame() {
+  const cv = els.currentFrame;
+  const frames = getFrames();
+  if (!frames.length) return;
+
+  const frame = frames[Math.min(state.idx, frames.length - 1)];
+  if (!frame) return;
+
+  const fw = frame.width, fh = frame.height;
+  if (cv.width !== fw || cv.height !== fh) makeCrisp(cv, fw, fh);
+  else {
+    const c0 = cv.getContext("2d");
+    c0.imageSmoothingEnabled = false;
+    c0.clearRect(0, 0, fw, fh);
+  }
+
+  const ctx = cv.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  // ★ วาดเฟรมเดี่ยว 1:1 (ไม่ scale) — เห็นภาพชัดเจน
+  ctx.drawImage(frame, 0, 0);
+
+  // คำนวณ zoom
+  let z;
+  if (state.zoom === "auto") {
+    const maxW = 500, maxH = 360;
+    z = Math.floor(Math.min(maxW / fw, maxH / fh));
+    if (z < 1) z = Math.min(maxW / fw, maxH / fh);
+  } else {
+    z = parseFloat(state.zoom);
+  }
+
+  cv.style.width  = Math.round(fw * z) + "px";
+  cv.style.height = Math.round(fh * z) + "px";
+
+  els.curFrameTitle.textContent = "#" + (state.idx + 1);
+  els.curFrameSize.textContent  = `${fw} × ${fh} px`;
+  els.curFrameZoom.textContent  = "zoom " + (Number.isInteger(z) ? z + "×" : z.toFixed(2) + "×");
+}
+
+/* ============================================================
+   DRAW: Sprite Sheet ที่แพ็คแล้ว — มีขอบช่องชัดเจน
+   ============================================================ */
+let _sheetBase = null;
+let _sheetBaseKey = "";
+
+function buildSheetBase(withLabels, withBorders) {
+  const frames = getFrames();
+  if (!frames.length) return null;
+
   const { fw, fh } = frameSize();
   const sheetW = fw * state.cols;
   const sheetH = fh * state.rows;
-  const slots = state.cols * state.rows;
-  const waste = slots - state.count;
 
-  let sizeMsg;
-  if (sheetW > 1024 || sheetH > 1024) {
-    sizeMsg = ` <span style="color:var(--warn)">⚠ เกิน 1024×1024 (Roblox แนะนำ ≤1024)</span>`;
-  } else {
-    sizeMsg = ` <span style="color:var(--ok)">✓ ขนาดแนะนำ</span>`;
+  const cv = document.createElement("canvas");
+  const ctx = makeCrisp(cv, sheetW, sheetH);
+
+  // ★ วาดแต่ละเฟรมลงในช่องของมัน (ภาพย่อยจริงแยกช่อง)
+  for (let i = 0; i < frames.length; i++) {
+    const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
+    ctx.drawImage(frames[i], c * fw, r * fh);
   }
 
-  const wasteMsg = waste > 0
-    ? ` <span style="color:var(--warn)">(เหลือ ${waste} ช่องว่าง)</span>`
-    : "";
+  // ★ เส้นขอบช่อง (ช่วยให้เห็นว่าช่องไหน = เฟรมไหน)
+  if (withBorders && fw >= 4 && fh >= 4) {
+    // เส้นแบ่งช่องแบบ "optical" — วาด 2px ทแยงสี เพื่อให้เห็นชัดทุกพื้นหลัง
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let c = 0; c <= state.cols; c++) {
+      const x = Math.round(c * fw) + 0.5;
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, sheetH); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.beginPath(); ctx.moveTo(x + 1, 0); ctx.lineTo(x + 1, sheetH); ctx.stroke();
+    }
+    for (let r = 0; r <= state.rows; r++) {
+      const y = Math.round(r * fh) + 0.5;
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(sheetW, y); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.beginPath(); ctx.moveTo(0, y + 1); ctx.lineTo(sheetW, y + 1); ctx.stroke();
+    }
+    ctx.restore();
+  }
 
-  els.packHint.innerHTML =
-    `Sheet <b>${sheetW} × ${sheetH}px</b> · ` +
-    `grid <b>${state.cols}×${state.rows}</b> · ` +
-    `<b>${state.count} เฟรม</b> ในภาพเดียว${wasteMsg}${sizeMsg}`;
+  // ★ เลขเฟรมในแต่ละช่อง
+  if (withLabels && fw >= 20 && fh >= 20) {
+    const fs = Math.max(10, Math.min(22, Math.floor(Math.min(fw, fh) / 3)));
+    ctx.font = `bold ${fs}px ui-monospace,Consolas,monospace`;
+    ctx.textBaseline = "top";
+    for (let i = 0; i < frames.length; i++) {
+      const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
+      const x = c * fw + 4;
+      const y = r * fh + 3;
+      const label = String(i + 1);
+      const w = ctx.measureText(label).width;
+      // เงาดำ
+      ctx.fillStyle = "rgba(0,0,0,0.75)";
+      ctx.fillRect(x - 3, y - 2, w + 6, fs + 4);
+      // ตัวเลข
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(label, x, y);
+    }
+  }
 
-  els.sheetSize.textContent = `${sheetW} × ${sheetH} px`;
-  els.sheetDims.textContent = `${state.cols} × ${state.rows} grid · ${state.count} เฟรม`;
+  return cv;
 }
 
-function updateBadge() {
-  const b = els.sharpBadge;
-  b.classList.add("show");
+function drawSheet() {
+  const cv = els.sheetCanvas;
+  const frames = getFrames();
+  if (!frames.length) return;
+
   const { fw, fh } = frameSize();
   const sheetW = fw * state.cols;
   const sheetH = fh * state.rows;
 
-  if (sheetW > 1024 || sheetH > 1024) {
-    b.className = "badge warn sharp-badge show";
-    b.textContent = `⚠ Sheet ${sheetW}×${sheetH}`;
-  } else {
-    b.className = "badge ok sharp-badge show";
-    b.textContent = `● ${state.cols}×${state.rows} = ${state.count} เฟรม`;
+  // สร้าง base (แคช)
+  const key = _framesKey + "|L=" + els.showCellLabels.checked + "|B=" + els.showCellBorders.checked;
+  if (_sheetBaseKey !== key || !_sheetBase) {
+    _sheetBase = buildSheetBase(els.showCellLabels.checked, els.showCellBorders.checked);
+    _sheetBaseKey = key;
+  }
+
+  if (cv.width !== sheetW || cv.height !== sheetH) makeCrisp(cv, sheetW, sheetH);
+  else {
+    const c0 = cv.getContext("2d");
+    c0.imageSmoothingEnabled = false;
+    c0.clearRect(0, 0, sheetW, sheetH);
+  }
+
+  const ctx = cv.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(_sheetBase, 0, 0);
+
+  // ★ ไฮไลต์เฟรมปัจจุบัน (เฉพาะพรีวิว)
+  const { c, r } = indexToCell(state.idx, state.cols, state.rows, state.order);
+  const lw = Math.max(2, Math.round(Math.min(fw, fh) / 24));
+  ctx.strokeStyle = "#f0883e";
+  ctx.lineWidth = lw;
+  ctx.strokeRect(
+    c * fw + lw / 2,
+    r * fh + lw / 2,
+    fw - lw,
+    fh - lw
+  );
+
+  // แสดงผลให้พอดีกรอบ
+  const maxW = 860, maxH = 540;
+  let z = 1;
+  if (sheetW > maxW || sheetH > maxH) {
+    z = Math.min(maxW / sheetW, maxH / sheetH);
+  }
+  cv.style.width  = Math.round(sheetW * z) + "px";
+  cv.style.height = Math.round(sheetH * z) + "px";
+}
+
+function drawSheetHighlightOnly() {
+  const cv = els.sheetCanvas;
+  if (!_sheetBase) return;
+  const { fw, fh } = frameSize();
+  const sheetW = fw * state.cols;
+  const sheetH = fh * state.rows;
+
+  const ctx = cv.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, sheetW, sheetH);
+  ctx.drawImage(_sheetBase, 0, 0);
+
+  const { c, r } = indexToCell(state.idx, state.cols, state.rows, state.order);
+  const lw = Math.max(2, Math.round(Math.min(fw, fh) / 24));
+  ctx.strokeStyle = "#f0883e";
+  ctx.lineWidth = lw;
+  ctx.strokeRect(c * fw + lw / 2, r * fh + lw / 2, fw - lw, fh - lw);
+}
+
+/* ============================================================
+   DRAW: FILMSTRIP + FRAME LIST
+   ============================================================ */
+let _frameHashes = null;
+let _frameHashesKey = "";
+
+function computeHashes(frames) {
+  const key = _framesKey;
+  if (_frameHashesKey === key && _frameHashes) return _frameHashes;
+
+  const hashes = frames.map(f => hashFrame(f));
+  _frameHashes = hashes;
+  _frameHashesKey = key;
+
+  // ตรวจสอบ: มี hash ซ้ำหรือไม่
+  const unique = new Set(hashes).size;
+  const total = hashes.length;
+  els.stripVerify.innerHTML = (unique === total)
+    ? `<span style="color:var(--ok)">✓ ${total} เฟรมต่างกันทั้งหมด</span>`
+    : `<span style="color:var(--warn)">⚠ ${total} เฟรม แต่มีแค่ ${unique} แบบที่ไม่ซ้ำ</span>`;
+
+  return hashes;
+}
+
+function drawFilmstrip() {
+  const strip = els.filmstrip;
+  const frames = getFrames();
+  if (!frames.length) {
+    strip.innerHTML = '<div class="filmstrip-empty">โหลดภาพเพื่อดูตัวอย่าง</div>';
+    els.stripCount.textContent = "0";
+    return;
+  }
+
+  const { fw, fh } = frameSize();
+  const thumbH = 56;
+  const thumbW = Math.max(20, Math.round(fw * (thumbH / fh)));
+
+  // จำกัดจำนวนที่แสดง (กันหนังหน่วง)
+  const MAX_SHOW = 256;
+  const show = Math.min(frames.length, MAX_SHOW);
+
+  strip.innerHTML = "";
+  for (let i = 0; i < show; i++) {
+    const cv = document.createElement("canvas");
+    const ctx = makeCrisp(cv, fw, fh);
+    ctx.drawImage(frames[i], 0, 0);
+
+    cv.style.width  = thumbW + "px";
+    cv.style.height = thumbH + "px";
+    cv.title = `Frame ${i + 1}`;
+    cv.dataset.idx = i;
+    if (i === state.idx) cv.classList.add("active");
+
+    cv.addEventListener("click", () => {
+      state.idx = i;
+      state.playing = false;
+      els.btnPlay.textContent = "▶ Play";
+      els.scrub.value = i;
+      drawCurrentFrame();
+      drawSheetHighlightOnly();
+      updateFilmstripActive();
+      updateFrameListActive();
+    });
+
+    strip.appendChild(cv);
+  }
+
+  els.stripCount.textContent = frames.length;
+}
+
+function updateFilmstripActive() {
+  const children = els.filmstrip.children;
+  for (let i = 0; i < children.length; i++) {
+    const c = children[i];
+    if (!c.dataset || c.dataset.idx === undefined) continue;
+    c.classList.toggle("active", +c.dataset.idx === state.idx);
   }
 }
 
+function drawFrameList() {
+  const list = els.frameList;
+  const frames = getFrames();
+  if (!frames.length) {
+    list.innerHTML = '<div style="padding:12px; color:var(--dim); text-align:center; font-size:12px">ยังไม่มีเฟรม</div>';
+    return;
+  }
+
+  const hashes = computeHashes(frames);
+  const { fw, fh } = frameSize();
+
+  // จำกัดแสดง
+  const MAX_SHOW = 200;
+  const show = Math.min(frames.length, MAX_SHOW);
+
+  let html = "";
+  for (let i = 0; i < show; i++) {
+    const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
+    const active = i === state.idx ? " active" : "";
+    html += `<div class="frame-row${active}" data-idx="${i}">
+      <span class="num">#${String(i + 1).padStart(3, "0")}</span>
+      <span class="pos">(${c * fw}, ${r * fh})</span>
+      <span class="hash">${hashes[i]}</span>
+    </div>`;
+  }
+  if (frames.length > MAX_SHOW) {
+    html += `<div style="padding:8px; color:var(--dim); text-align:center; font-size:11px">… และอีก ${frames.length - MAX_SHOW} เฟรม</div>`;
+  }
+  list.innerHTML = html;
+
+  // click handler
+  list.querySelectorAll(".frame-row").forEach(row => {
+    row.addEventListener("click", () => {
+      const i = +row.dataset.idx;
+      state.idx = i;
+      state.playing = false;
+      els.btnPlay.textContent = "▶ Play";
+      els.scrub.value = i;
+      drawCurrentFrame();
+      drawSheetHighlightOnly();
+      updateFilmstripActive();
+      updateFrameListActive();
+    });
+  });
+}
+
+function updateFrameListActive() {
+  els.frameList.querySelectorAll(".frame-row").forEach(row => {
+    row.classList.toggle("active", +row.dataset.idx === state.idx);
+  });
+}
+
+/* ============================================================
+   UPDATE META / HINTS
+   ============================================================ */
 function updateMeta() {
   const { fw, fh } = frameSize();
   const playFps = (state.mode === "gif" && els.gifUseDelays.checked)
@@ -619,193 +922,73 @@ function updateMeta() {
   els.pillDur.textContent   = dur.toFixed(2) + " s";
   els.pillFrame.textContent = `frame ${state.idx + 1} / ${state.count}`;
   els.frameNum.textContent  = String(state.idx + 1);
-  els.pvSize.textContent    = `${fw} × ${fh} px / เฟรม`;
+}
+
+function updatePackHint() {
+  const { fw, fh } = frameSize();
+  const sheetW = fw * state.cols;
+  const sheetH = fh * state.rows;
+  const slots = state.cols * state.rows;
+  const waste = slots - state.count;
+
+  let sizeMsg;
+  if (sheetW > 1024 || sheetH > 1024) {
+    sizeMsg = ` <span style="color:var(--warn)">⚠ เกิน 1024×1024</span>`;
+  } else {
+    sizeMsg = ` <span style="color:var(--ok)">✓ ขนาดแนะนำ</span>`;
+  }
+
+  const wasteMsg = waste > 0
+    ? ` <span style="color:var(--warn)">(เหลือ ${waste} ช่องว่าง)</span>`
+    : waste < 0
+      ? ` <span style="color:var(--err)">(ไม่พอ! ต้องการ ${state.count} ช่อง)</span>`
+      : "";
+
+  els.packHint.innerHTML =
+    `Sheet <b>${sheetW} × ${sheetH}px</b> · ` +
+    `<b>${state.cols}×${state.rows}</b> = ${slots} ช่อง · ` +
+    `ใช้ <b>${state.count}</b> เฟรม${wasteMsg}${sizeMsg}`;
+
+  els.sheetSize.textContent = `${sheetW} × ${sheetH} px`;
+  els.sheetDims.textContent = `${state.cols} × ${state.rows} grid · ${state.count} เฟรม`;
+}
+
+function updateReadyBadge() {
+  const b = els.readyBadge;
+  b.classList.add("show");
+  b.textContent = `● ${state.cols}×${state.rows} = ${state.count} เฟรม`;
 }
 
 /* ============================================================
-   DRAW PREVIEW (1 เฟรม)
+   RECALC
    ============================================================ */
-function drawPreview() {
-  const cv = els.preview;
-  const frames = getFrames();
-  if (!frames.length) return;
-
-  const frame = frames[Math.min(state.idx, frames.length - 1)];
-  if (!frame) return;
-
-  const fw = frame.width, fh = frame.height;
-  if (cv.width !== fw || cv.height !== fh) {
-    makeCrispContext(cv, fw, fh);
+function recalc() {
+  if (state.mode === "sheet") {
+    // ★ โหมด Sheet: จำนวนเฟรม = cols × rows เสมอ
+    state.count = state.cols * state.rows;
+    state.start = 0;
+    state.idx = Math.min(Math.max(0, state.idx), state.count - 1);
+    els.scrub.max = Math.max(0, state.count - 1);
+    els.scrub.value = state.idx;
   } else {
-    const c0 = cv.getContext("2d");
-    c0.imageSmoothingEnabled = false;
-    c0.clearRect(0, 0, fw, fh);
+    // โหมด GIF
+    const max = state.gifFrames ? state.gifFrames.length : 1;
+    state.count = Math.min(Math.max(1, state.count), max);
+    if (state.start + state.count > max) state.start = Math.max(0, max - state.count);
+    state.idx = Math.min(Math.max(0, state.idx), state.count - 1);
+
+    els.gifCount.value = state.count;
+    els.gifCount.max = max;
+    els.gifStart.value = state.start;
+    els.gifStart.max = Math.max(0, max - 1);
+    els.scrub.max = Math.max(0, state.count - 1);
+    els.scrub.value = state.idx;
   }
 
-  const ctx = cv.getContext("2d");
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(frame, 0, 0);
-
-  const z = computeZoom(fw, fh);
-  cv.style.width  = Math.round(fw * z) + "px";
-  cv.style.height = Math.round(fh * z) + "px";
-  els.pvZoom.textContent = "zoom " + (Number.isInteger(z) ? z + "×" : z.toFixed(2) + "×");
-
+  invalidateCache();
+  updatePackHint();
   updateMeta();
-}
-
-/* ============================================================
-   SHEET BASE CACHE — ภาพ sheet ที่แพ็คแล้ว (ไม่มี highlight)
-   ============================================================ */
-let _sheetBase = null;
-let _sheetBaseKey = "";
-
-function buildSheetBase(withLabels) {
-  const frames = getFrames();
-  if (!frames.length) return null;
-
-  const { fw, fh } = frameSize();
-  const sheetW = fw * state.cols;
-  const sheetH = fh * state.rows;
-
-  const cv = document.createElement("canvas");
-  const ctx = makeCrispContext(cv, sheetW, sheetH);
-
-  // วาดทุกเฟรมลงในตาราง
-  for (let i = 0; i < frames.length; i++) {
-    const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
-    ctx.drawImage(frames[i], c * fw, r * fh);
-  }
-
-  // วาดเลขเฟรม (เฉพาะใน preview — ไม่ติดไปกับ export)
-  if (withLabels && fw >= 16 && fh >= 16) {
-    const fs = Math.max(9, Math.min(20, Math.floor(fw / 4)));
-    ctx.font = `bold ${fs}px ui-monospace,Consolas,monospace`;
-    ctx.textBaseline = "top";
-    for (let i = 0; i < frames.length; i++) {
-      const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
-      const x = c * fw + 3;
-      const y = r * fh + 2;
-      const label = String(i + 1);
-      const w = ctx.measureText(label).width;
-      // พื้นหลังดำครึ่งโปร่ง
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.fillRect(x - 2, y, w + 4, fs + 2);
-      // ตัวเลขขาว
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.fillText(label, x, y + 1);
-    }
-  }
-
-  return cv;
-}
-
-/* ============================================================
-   DRAW SHEET PREVIEW
-   ============================================================ */
-function drawSheet() {
-  const cv = els.sheetCanvas;
-  const frames = getFrames();
-  if (!frames.length) return;
-
-  const { fw, fh } = frameSize();
-  const sheetW = fw * state.cols;
-  const sheetH = fh * state.rows;
-
-  // สร้าง base (cache ตาม key + สถานะ labels)
-  const key = _framesKey + "|labels=" + els.showFrameNumbers.checked;
-  if (_sheetBaseKey !== key || !_sheetBase) {
-    _sheetBase = buildSheetBase(els.showFrameNumbers.checked);
-    _sheetBaseKey = key;
-  }
-
-  if (cv.width !== sheetW || cv.height !== sheetH) {
-    makeCrispContext(cv, sheetW, sheetH);
-  } else {
-    const c0 = cv.getContext("2d");
-    c0.imageSmoothingEnabled = false;
-    c0.clearRect(0, 0, sheetW, sheetH);
-  }
-
-  const ctx = cv.getContext("2d");
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(_sheetBase, 0, 0);
-
-  // ไฮไลต์เฟรมปัจจุบัน (พรีวิวเท่านั้น)
-  const { c, r } = indexToCell(state.idx, state.cols, state.rows, state.order);
-  ctx.strokeStyle = "#f0883e";
-  ctx.lineWidth = Math.max(2, Math.round(Math.min(fw, fh) / 32));
-  ctx.strokeRect(
-    c * fw + ctx.lineWidth / 2,
-    r * fh + ctx.lineWidth / 2,
-    fw - ctx.lineWidth,
-    fh - ctx.lineWidth
-  );
-
-  // แสดงแบบ 1:1 หรือ integer zoom (คมชัด)
-  const maxW = 720, maxH = 480;
-  let z = 1;
-  if (sheetW > maxW || sheetH > maxH) {
-    // ย่อแบบ fractional เพื่อให้เห็นทั้งหมด (ยังคมเพราะเป็น canvas→CSS scale)
-    z = Math.min(maxW / sheetW, maxH / sheetH);
-  }
-  cv.style.width  = Math.round(sheetW * z) + "px";
-  cv.style.height = Math.round(sheetH * z) + "px";
-
-  // อัปเดต filmstrip
-  drawFilmstrip();
-}
-
-/* ============================================================
-   FILMSTRIP — แสดงทุกเฟรมเป็นแถว
-   ============================================================ */
-function drawFilmstrip() {
-  const strip = els.filmstrip;
-  const frames = getFrames();
-  if (!frames.length) {
-    strip.innerHTML = '<div class="filmstrip-empty">โหลดภาพเพื่อดูตัวอย่างทุกเฟรม</div>';
-    return;
-  }
-
-  const { fw, fh } = frameSize();
-  const thumbH = 56;
-  const thumbW = Math.max(16, Math.round(fw * (thumbH / fh)));
-
-  strip.innerHTML = "";
-  for (let i = 0; i < frames.length; i++) {
-    const cv = document.createElement("canvas");
-    cv.width = fw; cv.height = fh;
-    const ctx = makeCrispContext(cv, fw, fh);
-    ctx.drawImage(frames[i], 0, 0);
-
-    cv.style.width  = thumbW + "px";
-    cv.style.height = thumbH + "px";
-    cv.title = `Frame ${i + 1}`;
-    if (i === state.idx) cv.classList.add("active");
-    cv.dataset.idx = i;
-
-    cv.addEventListener("click", () => {
-      state.idx = i;
-      state.playing = false;
-      els.btnPlay.textContent = "▶ Play";
-      els.scrub.value = i;
-      drawPreview();
-      drawSheet();
-    });
-
-    strip.appendChild(cv);
-  }
-}
-
-/** อัปเดตแค่ active class ของ filmstrip (เร็ว) */
-function updateFilmstripActive() {
-  const children = els.filmstrip.children;
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i];
-    if (!child.dataset || child.dataset.idx === undefined) continue;
-    if (+child.dataset.idx === state.idx) child.classList.add("active");
-    else child.classList.remove("active");
-  }
+  updateReadyBadge();
 }
 
 /* ============================================================
@@ -829,54 +1012,29 @@ function tick(now) {
     }
     if (changed) {
       els.scrub.value = state.idx;
-      drawPreview();
-      // อัปเดตแค่ไฮไลต์บน sheet โดยไม่ต้อง rebuild base
+      drawCurrentFrame();
       drawSheetHighlightOnly();
       updateFilmstripActive();
+      updateFrameListActive();
+      updateMeta();
     }
   }
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
 
-/** วาดเฉพาะไฮไลต์ทับ sheet preview (เร็ว) */
-function drawSheetHighlightOnly() {
-  const cv = els.sheetCanvas;
-  if (!_sheetBase) return;
-  const { fw, fh } = frameSize();
-  const sheetW = fw * state.cols;
-  const sheetH = fh * state.rows;
-
-  const ctx = cv.getContext("2d");
-  ctx.imageSmoothingEnabled = false;
-
-  // วาด base ทับ
-  ctx.clearRect(0, 0, sheetW, sheetH);
-  ctx.drawImage(_sheetBase, 0, 0);
-
-  // ไฮไลต์
-  const { c, r } = indexToCell(state.idx, state.cols, state.rows, state.order);
-  ctx.strokeStyle = "#f0883e";
-  ctx.lineWidth = Math.max(2, Math.round(Math.min(fw, fh) / 32));
-  ctx.strokeRect(
-    c * fw + ctx.lineWidth / 2,
-    r * fh + ctx.lineWidth / 2,
-    fw - ctx.lineWidth,
-    fh - ctx.lineWidth
-  );
-}
-
 /* ============================================================
    LOAD
    ============================================================ */
 async function loadFile(file) {
   if (!file) return;
-
   const isGif = file.type === "image/gif" || /\.gif$/i.test(file.name);
   if (!file.type.startsWith("image/") && !isGif) {
     setStatus("ไฟล์ไม่ใช่รูปภาพ", "err");
     return;
   }
+
+  state.fileName = file.name;
 
   if (isGif) {
     setStatus("กำลังถอดรหัส GIF…");
@@ -903,20 +1061,18 @@ function applySheet(file, img) {
   state.gifFrames = null;
   state.gifDelays = null;
   state.idx = 0; state.acc = 0; state.start = 0;
+  invalidateCache();
 
-  // ★ รีเซ็ตค่าตารางสำหรับ Sheet ใหม่
+  // ตั้ง default grid เป็น 8×8
   state.cols = 8;
   state.rows = 8;
   els.cols.value = 8;
   els.rows.value = 8;
 
-  invalidateCache();
-
   els.gifBadge.classList.remove("show");
   els.panelGif.style.display = "none";
-  els.fpsNote.textContent = "export";
 
-  els.imgInfo.innerHTML = `<b>${file.name}</b><br>${img.width} × ${img.height} px · รูปนิ่ง`;
+  els.imgInfo.innerHTML = `<b>${file.name}</b><br>${img.width} × ${img.height} px · รูปนิ่ง (sprite sheet)`;
 
   recalc();
   els.btnSheet.disabled = false;
@@ -924,12 +1080,15 @@ function applySheet(file, img) {
   els.btnPlayer.disabled = false;
 
   setStatus(
-    `โหลดแล้ว — ${img.width}×${img.height}px · ` +
-    `ตัดเป็น ${state.cols}×${state.rows} = ${state.count} เฟรม`,
+    `โหลดแล้ว — ${img.width}×${img.height}px · ตัดเป็น ${state.cols}×${state.rows} = ${state.count} เฟรม`,
     "ok"
   );
-  drawPreview();
+
+  // วาดทุกอย่าง
+  drawCurrentFrame();
   drawSheet();
+  drawFilmstrip();
+  drawFrameList();
 }
 
 function applyGif(file, gif) {
@@ -940,14 +1099,12 @@ function applyGif(file, gif) {
   state.gifW = gif.width;
   state.gifH = gif.height;
   state.idx = 0; state.acc = 0;
-
   invalidateCache();
 
   const n = gif.frames.length;
   els.gifBadge.classList.add("show");
   els.gifBadgeCount.textContent = n;
   els.panelGif.style.display = "";
-  els.fpsNote.textContent = "export";
 
   els.gifCount.value = n;
   els.gifCount.max = n;
@@ -957,6 +1114,14 @@ function applyGif(file, gif) {
   state.start = 0;
   state.count = n;
 
+  // Auto grid ให้สมดุล
+  const g = computeAutoGrid(n);
+  state.cols = g.cols;
+  state.rows = g.rows;
+  els.cols.value = state.cols;
+  els.rows.value = state.rows;
+
+  // FPS เฉลี่ย
   const total = gif.delays.reduce((a, b) => a + (b > 0.01 ? b : 0.1), 0);
   const avgFps = Math.round(n / total);
   state.fps = Math.max(1, Math.min(120, avgFps || 24));
@@ -976,11 +1141,27 @@ function applyGif(file, gif) {
   els.btnPlayer.disabled = false;
 
   setStatus(
-    `โหลด GIF แล้ว — ${n} เฟรม, ${total.toFixed(2)}s → แพ็คเป็น grid ${state.cols}×${state.rows}`,
+    `โหลด GIF แล้ว — ${n} เฟรม · แพ็คเป็น grid ${state.cols}×${state.rows}`,
     "gif"
   );
-  drawPreview();
+
+  drawCurrentFrame();
   drawSheet();
+  drawFilmstrip();
+  drawFrameList();
+}
+
+function computeAutoGrid(n) {
+  let best = { cols: n, rows: 1, score: Infinity };
+  for (let c = 1; c <= n; c++) {
+    const r = Math.ceil(n / c);
+    if (c * r < n) continue;
+    const aspect = c / r;
+    const waste = c * r - n;
+    const score = Math.abs(Math.log(aspect)) * 3 + waste * 0.5;
+    if (score < best.score) best = { cols: c, rows: r, score };
+  }
+  return best;
 }
 
 /* ============================================================
@@ -1164,7 +1345,7 @@ async function decodeGifWithImageDecoder(file) {
     const { image } = await decoder.decode({ frameIndex: i });
     if (i === 0) { W = image.displayWidth; H = image.displayHeight; }
     const cv = document.createElement("canvas");
-    const ctx = makeCrispContext(cv, W, H);
+    const ctx = makeCrisp(cv, W, H);
     ctx.drawImage(image, 0, 0);
     frames.push(cv);
     delays.push(image.duration ? image.duration / 1e6 : 0.1);
@@ -1183,7 +1364,7 @@ async function decodeGif(file) {
 }
 
 /* ============================================================
-   ZIP WRITER (store)
+   ZIP WRITER
    ============================================================ */
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
@@ -1247,18 +1428,18 @@ function buildZip(files) {
 }
 
 /* ============================================================
-   EXPORT — สร้าง sheet (ไม่มี labels) แล้วบีบเป็น PNG/JPG
+   EXPORT — Sprite Sheet เดียว (แต่ละช่อง = เฟรมจริง)
    ============================================================ */
 function buildExportSheet() {
-  // ★ สร้าง sheet ที่ไม่มี labels (ใช้ getFrames + วาดตาม grid)
   const frames = getFrames();
   const { fw, fh } = frameSize();
   const sheetW = fw * state.cols;
   const sheetH = fh * state.rows;
 
   const cv = document.createElement("canvas");
-  const ctx = makeCrispContext(cv, sheetW, sheetH);
+  const ctx = makeCrisp(cv, sheetW, sheetH);
 
+  // ★ วาดแต่ละเฟรม (ภาพย่อยจริง) ลงในช่องของมัน
   for (let i = 0; i < frames.length; i++) {
     const { c, r } = indexToCell(i, state.cols, state.rows, state.order);
     ctx.drawImage(frames[i], c * fw, r * fh);
@@ -1277,19 +1458,19 @@ function genLuaModule() {
     ? Math.max(1, Math.round(averageFps()))
     : state.fps;
 
-  return `-- Frames.lua | Sprite Sheet Module (ทุกเฟรมในภาพเดียว)
+  return `-- Frames.lua | Sprite Sheet Module
+-- ★ ทุกเฟรมอยู่ในภาพเดียว (sprite sheet) เรียงเป็นตาราง ${state.cols}×${state.rows}
+-- ★ แต่ละช่อง = 1 เฟรม = ภาพย่อยจริง (ไม่ใช่ภาพเดียวกันซ้ำ)
 -- อัปโหลด sprite_sheet.${els.exportFormat.value} แล้วแทนที่ SHEET_ID
--- ภาพนี้มี ${state.count} เฟรม เรียงเป็นตาราง ${state.cols}×${state.rows}
--- ใช้ ImageRectOffset + ImageRectSize ในการเล่น — ImageLabel เดียว
 
 return {
 \tSheetId   = "rbxassetid://0",  -- ★ ใส่ asset id ที่นี่
 \tSheetSize = Vector2.new(${sheetW}, ${sheetH}),  -- ขนาดภาพรวม
-\tFrameSize = Vector2.new(${fw}, ${fh}),          -- ขนาด 1 เฟรม
+\tFrameSize = Vector2.new(${fw}, ${fh}),          -- ขนาด 1 เฟรม (1 ช่อง)
 \tColumns   = ${state.cols},
 \tRows      = ${state.rows},
 \tFrameCount = ${state.count},
-\tOrder     = "${state.order}",   -- "row" | "col"
+\tOrder     = "${state.order}",   -- "row" = ซ้าย→ขวา, บน→ล่าง
 \tFps       = ${fps},
 \tLoop      = true,
 }`;
@@ -1304,8 +1485,8 @@ function genLuaPlayer() {
     : state.fps;
 
   return `-- VideoPlayer.lua | เล่น sprite sheet ด้วย ImageRectOffset
+-- ★ ImageLabel เดียว แสดงทุกเฟรม โดยเลื่อน offset ไปตามช่อง
 -- วางไฟล์นี้ + Frames.lua ไว้ใน ReplicatedStorage
--- ImageLabel เดียวแสดงทุกเฟรม ไม่ต้องอัปโหลดแยก
 
 local RunService = game:GetService("RunService")
 
@@ -1338,10 +1519,12 @@ function VideoPlayer.new(config)
 end
 
 function VideoPlayer:_setup()
-\tself.Target.Image         = self.SheetId
+\t-- ★ ภาพเดียว มีทุกเฟรม
+\tself.Target.Image = self.SheetId
+\t-- ★ ขนาด 1 เฟรม (1 ช่อง)
 \tself.Target.ImageRectSize = self.FrameSize
 
-\t-- ★ ความคมชัด: Pixelated
+\t-- ★ ความคมชัด
 \tif self.Target:IsA("ImageLabel") or self.Target:IsA("ImageButton") then
 \t\tself.Target.ResampleMode = Enum.ResamplerMode.Pixelated
 \t\tself.Target.ScaleType    = Enum.ScaleType.Stretch
@@ -1363,6 +1546,7 @@ function VideoPlayer:_applyFrame()
 \t\tcol = i % self.Columns
 \t\trow = math.floor(i / self.Columns)
 \tend
+\t-- ★ เลื่อน offset ไปช่องของเฟรมนั้น
 \tself.Target.ImageRectOffset = Vector2.new(
 \t\tcol * self.FrameSize.X,
 \t\trow * self.FrameSize.Y
@@ -1442,15 +1626,11 @@ return VideoPlayer
 --     Fps        = data.Fps,
 --     Loop       = true,
 --     AutoPlay   = true,
--- }
---
--- vp:SetFrame(5)
--- vp:Pause()
--- vp:Play()`;
+-- }`;
 }
 
 /* ============================================================
-   EXPORT
+   EXPORT ACTION
    ============================================================ */
 async function exportSheet() {
   if (!state.img && !state.gifFrames) return;
@@ -1484,34 +1664,34 @@ async function exportSheet() {
     files.push({
       name: "README.txt",
       data: enc.encode(
-`Sprite Sheet Export — ทุกเฟรมในภาพเดียว (ImageRectOffset)
+`Sprite Sheet Export — แต่ละช่อง = 1 เฟรม = ภาพย่อยจริง
 ==========================================================
 ไฟล์ในโฟลเดอร์นี้
-  sprite_sheet.${ext}   ← ภาพเดียว มี ${state.count} เฟรมเรียงเป็นตาราง ${state.cols}×${state.rows}
+  sprite_sheet.${ext}   ← ภาพเดียว มี ${state.count} เฟรม เรียงเป็นตาราง ${state.cols}×${state.rows}
   Frames.lua          ← config (วางใน ReplicatedStorage)
   VideoPlayer.lua     ← player script (วางใน ReplicatedStorage)
 
 ข้อมูล Sheet
-  ขนาดภาพรวม  : ${sheetW} × ${sheetH} px
-  ขนาด 1 เฟรม  : ${fw} × ${fh} px
-  ตาราง       : ${state.cols} คอลัมน์ × ${state.rows} แถว
-  จำนวนเฟรม    : ${state.count} (ทุกเฟรมอยู่ในภาพเดียวกัน)
-  ลำดับ        : ${state.order === "row" ? "ซ้าย→ขวา, บน→ล่าง" : "บน→ล่าง, ซ้าย→ขวา"}
-  FPS แนะนำ    : ${fps}
-  รูปแบบ       : ${fmt.toUpperCase()}${fmt === "jpg" ? ` (quality ${Math.round(quality*100)}%)` : " (lossless)"}
+  ขนาดภาพรวม   : ${sheetW} × ${sheetH} px
+  ขนาด 1 เฟรม   : ${fw} × ${fh} px  (= 1 ช่อง)
+  ตาราง        : ${state.cols} คอลัมน์ × ${state.rows} แถว
+  จำนวนเฟรม     : ${state.count}
+  ลำดับ         : ${state.order === "row" ? "ซ้าย→ขวา, บน→ล่าง" : "บน→ล่าง, ซ้าย→ขวา"}
+  FPS แนะนำ     : ${fps}
+  รูปแบบ        : ${fmt.toUpperCase()}
+
+★ สำคัญ: ทุกเฟรมอยู่ในภาพเดียว แต่ละช่องมี "ภาพย่อย" ของตัวเอง
+   ไม่ใช่ภาพเดียวกันซ้ำ — Roblox เล่นโดยเลื่อน ImageRectOffset ไปแต่ละช่อง
 
 ขั้นตอน
 1. อัปโหลด sprite_sheet.${ext} ขึ้น Roblox
-   (Creator Dashboard > Development Items > Images)
-2. คัดลอก asset id มาใส่ใน Frames.lua ที่ SheetId = "rbxassetid://..."
+2. คัดลอก asset id → ใส่ใน Frames.lua ที่ SheetId
 3. วาง Frames.lua และ VideoPlayer.lua ไว้ใน ReplicatedStorage
-4. ใน StarterGui สร้าง ScreenGui > Frame > ImageLabel
-   ตั้ง Size ของ ImageLabel = ${fw*4}×${fh*4} (4× ของ FrameSize เพื่อความคมชัด)
+4. สร้าง ImageLabel ใน StarterGui ตั้ง Size = ${fw*4}×${fh*4}
 5. ใส่ LocalScript ใต้ ImageLabel:
 
    local VideoPlayer = require(game.ReplicatedStorage.VideoPlayer)
    local data = require(game.ReplicatedStorage.Frames)
-
    local vp = VideoPlayer.new{
        Target     = script.Parent,
        SheetId    = data.SheetId,
@@ -1525,17 +1705,6 @@ async function exportSheet() {
        Loop       = true,
        AutoPlay   = true,
    }
-
-★ วิธีทำงาน
-  ImageLabel.Image = sprite_sheet.${ext}  (ภาพเดียว มีทุกเฟรม)
-  ImageRectSize    = Vector2.new(${fw}, ${fh})   (ขนาด 1 เฟรม)
-  ImageRectOffset  = Vector2.new(col * ${fw}, row * ${fh})   (ตำแหน่งเฟรม)
-  → ImageLabel เดียว แสดงทุกเฟรมสลับกันตาม FPS
-
-★ ความคมชัด
-  VideoPlayer.lua ตั้ง ResampleMode = Pixelated ให้แล้ว
-  แนะนำ Size ImageLabel = integer multiple ของ FrameSize
-  เช่น ${fw}×${fh} → ${fw*2}×${fh*2} (2×) หรือ ${fw*4}×${fh*4} (4×)
 `)
     });
 
@@ -1596,35 +1765,31 @@ els.drop.addEventListener("drop", e => {
 window.addEventListener("dragover", e => e.preventDefault());
 window.addEventListener("drop", e => e.preventDefault());
 
-els.packMode.addEventListener("change", () => {
-  state.packMode = els.packMode.value;
-  els.manualRow.style.display = state.packMode === "manual" ? "" : "none";
-  recalc();
-  drawPreview();
-  drawSheet();
-});
-
 els.cols.addEventListener("input", () => {
   state.cols = Math.max(1, Math.min(64, +els.cols.value || 1));
-  recalc(); drawPreview(); drawSheet();
+  recalc();
+  drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
 });
 els.rows.addEventListener("input", () => {
   state.rows = Math.max(1, Math.min(64, +els.rows.value || 1));
-  recalc(); drawPreview(); drawSheet();
+  recalc();
+  drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
 });
 els.order.addEventListener("change", () => {
   state.order = els.order.value;
   invalidateCache();
-  drawPreview(); drawSheet();
+  drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
 });
 
 els.gifCount.addEventListener("input", () => {
   state.count = Math.max(1, +els.gifCount.value || 1);
-  recalc(); drawPreview(); drawSheet();
+  recalc();
+  drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
 });
 els.gifStart.addEventListener("input", () => {
   state.start = Math.max(0, +els.gifStart.value || 0);
-  recalc(); drawPreview(); drawSheet();
+  recalc();
+  drawCurrentFrame(); drawSheet(); drawFilmstrip(); drawFrameList();
 });
 els.gifUseDelays.addEventListener("change", () => { state.acc = 0; updateMeta(); });
 
@@ -1634,9 +1799,13 @@ els.fps.addEventListener("input", () => {
 });
 els.zoom.addEventListener("change", () => {
   state.zoom = els.zoom.value;
-  drawPreview();
+  drawCurrentFrame();
 });
-els.showFrameNumbers.addEventListener("change", () => {
+els.showCellLabels.addEventListener("change", () => {
+  _sheetBase = null; _sheetBaseKey = "";
+  drawSheet();
+});
+els.showCellBorders.addEventListener("change", () => {
   _sheetBase = null; _sheetBaseKey = "";
   drawSheet();
 });
@@ -1646,9 +1815,11 @@ els.scrub.addEventListener("input", () => {
   state.acc = 0;
   state.playing = false;
   els.btnPlay.textContent = "▶ Play";
-  drawPreview();
+  drawCurrentFrame();
   drawSheetHighlightOnly();
   updateFilmstripActive();
+  updateFrameListActive();
+  updateMeta();
 });
 
 els.exportFormat.addEventListener("change", () => {
@@ -1663,18 +1834,21 @@ els.btnNext.addEventListener("click", () => {
   state.playing = false; els.btnPlay.textContent = "▶ Play";
   state.idx = (state.idx + 1) % state.count;
   els.scrub.value = state.idx;
-  drawPreview(); drawSheetHighlightOnly(); updateFilmstripActive();
+  drawCurrentFrame(); drawSheetHighlightOnly();
+  updateFilmstripActive(); updateFrameListActive(); updateMeta();
 });
 els.btnPrev.addEventListener("click", () => {
   state.playing = false; els.btnPlay.textContent = "▶ Play";
   state.idx = (state.idx - 1 + state.count) % state.count;
   els.scrub.value = state.idx;
-  drawPreview(); drawSheetHighlightOnly(); updateFilmstripActive();
+  drawCurrentFrame(); drawSheetHighlightOnly();
+  updateFilmstripActive(); updateFrameListActive(); updateMeta();
 });
 els.btnFirst.addEventListener("click", () => {
   state.idx = 0; state.acc = 0;
   els.scrub.value = 0;
-  drawPreview(); drawSheetHighlightOnly(); updateFilmstripActive();
+  drawCurrentFrame(); drawSheetHighlightOnly();
+  updateFilmstripActive(); updateFrameListActive(); updateMeta();
 });
 
 els.btnSheet.addEventListener("click", exportSheet);
@@ -1691,10 +1865,6 @@ document.addEventListener("keydown", e => {
 
 els.btnPlay.textContent = "⏸ Pause";
 els.jpgQuality.disabled = true;
-
-window.addEventListener("resize", () => {
-  if (state.zoom === "auto") drawPreview();
-});
 </script>
 </body>
 </html>
