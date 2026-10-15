@@ -5,215 +5,132 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Media → Sprite Sheet + Lua Export</title>
 <style>
-  :root{
-    --bg:#0e1116; --panel:#161b22; --panel2:#1c2430; --line:#2a3441;
-    --fg:#e6edf3; --dim:#8b98a5; --accent:#58a6ff; --ok:#3fb950;
-    --err:#f85149; --gif:#a371f7; --warn:#d29922; --vid:#f0883e; --lib:#2ea043;
-  }
+  :root{--bg:#0e1116;--panel:#161b22;--panel2:#1c2430;--line:#2a3441;--fg:#e6edf3;--dim:#8b98a5;--accent:#58a6ff;--ok:#3fb950;--err:#f85149;--gif:#a371f7;--warn:#d29922;--vid:#f0883e;--lib:#2ea043}
   *{box-sizing:border-box}
-  body{margin:0; background:var(--bg); color:var(--fg);
-    font-family:"Segoe UI",system-ui,-apple-system,"Noto Sans Thai",sans-serif;
-    font-size:14px; line-height:1.5; overflow-x:hidden;}
-  header{padding:14px 20px; border-bottom:1px solid var(--line);
-    display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
-    background:linear-gradient(180deg,#161b22,#0e1116);}
-  header h1{margin:0; font-size:15px}
-  header .sub{color:var(--dim); font-size:12px}
-  .badge{display:none; align-items:center; gap:5px; font-size:11px;
-    padding:3px 9px; border-radius:20px;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,-apple-system,"Noto Sans Thai",sans-serif;font-size:14px;line-height:1.5;overflow-x:hidden}
+  header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;background:linear-gradient(180deg,#161b22,#0e1116)}
+  header h1{margin:0;font-size:15px}
+  header .sub{color:var(--dim);font-size:12px}
+  .badge{display:none;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px}
   .badge.show{display:inline-flex}
-  .badge.gif{background:#1a1430; border:1px solid #4a3070; color:var(--gif)}
-  .badge.gif::before{content:"●"; font-size:8px}
-  .badge.vid{background:#2a1a0e; border:1px solid #5c3a1a; color:var(--vid)}
-  .badge.vid::before{content:"●"; font-size:8px}
-  .badge.ok{background:#0e2a17; border:1px solid #1f4a2b; color:var(--ok)}
-  .badge.ok::before{content:"●"; font-size:8px}
-
-  .app{display:grid; grid-template-columns:340px minmax(0,1fr);
-    gap:14px; padding:14px; max-width:1700px; margin:0 auto; align-items:start;}
-  .app > *{min-width:0}
-  @media(max-width:1000px){ .app{grid-template-columns:1fr} }
-
-  .panel{background:var(--panel); border:1px solid var(--line);
-    border-radius:10px; padding:12px;}
-  .panel + .panel{margin-top:12px}
-  .panel h2{margin:0 0 10px; font-size:11.5px; text-transform:uppercase;
-    letter-spacing:.9px; color:var(--dim); font-weight:600;}
-
-  .drop{border:2px dashed var(--line); border-radius:10px; padding:22px 12px;
-    text-align:center; color:var(--dim); cursor:pointer;
-    transition:border-color .15s, background .15s; background:var(--panel2);
-    position:relative; overflow:hidden;}
-  .drop:hover{border-color:var(--accent); color:var(--fg); background:#1b2531}
-  .drop.over{border-color:var(--accent); color:var(--fg); background:#1e2e44;
-    box-shadow:inset 0 0 0 3px rgba(88,166,255,.15);}
-  .drop.over::after{content:"ปล่อยไฟล์ตรงนี้"; position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    background:rgba(88,166,255,.1); font-weight:600; font-size:14px;
-    color:#fff; pointer-events:none;}
-  .drop strong{color:var(--accent); display:block; margin-bottom:6px; font-size:13.5px}
-  .drop .formats{display:flex; gap:4px; justify-content:center; flex-wrap:wrap; margin-top:8px;}
-  .drop .fmt{font-size:10px; padding:2px 6px; border-radius:4px;
-    background:#0d1117; border:1px solid var(--line); color:var(--dim);
-    font-family:ui-monospace,monospace;}
-  .drop .fmt.vid{color:var(--vid); border-color:#5c3a1a; background:#2a1a0e}
-  .drop .paste-hint{font-size:11px; color:var(--dim); margin-top:8px;
-    display:flex; align-items:center; justify-content:center; gap:4px;}
-  .drop .paste-hint kbd{background:#0d1117; border:1px solid var(--line);
-    border-bottom-width:2px; padding:0 5px; border-radius:3px; font-size:10px;
-    font-family:ui-monospace,monospace;}
-
-  .pending-list{margin-top:10px; max-height:140px; overflow-y:auto;
-    background:#0a0d12; border:1px solid var(--line); border-radius:6px; font-size:11.5px;}
+  .badge.gif{background:#1a1430;border:1px solid #4a3070;color:var(--gif)}
+  .badge.gif::before{content:"●";font-size:8px}
+  .badge.vid{background:#2a1a0e;border:1px solid #5c3a1a;color:var(--vid)}
+  .badge.vid::before{content:"●";font-size:8px}
+  .badge.ok{background:#0e2a17;border:1px solid #1f4a2b;color:var(--ok)}
+  .badge.ok::before{content:"●";font-size:8px}
+  .app{display:grid;grid-template-columns:340px minmax(0,1fr);gap:14px;padding:14px;max-width:1700px;margin:0 auto;align-items:start}
+  .app>*{min-width:0}
+  @media(max-width:1000px){.app{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .panel+.panel{margin-top:12px}
+  .panel h2{margin:0 0 10px;font-size:11.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--dim);font-weight:600}
+  .drop{border:2px dashed var(--line);border-radius:10px;padding:22px 12px;text-align:center;color:var(--dim);cursor:pointer;transition:border-color .15s,background .15s;background:var(--panel2);position:relative;overflow:hidden}
+  .drop:hover{border-color:var(--accent);color:var(--fg);background:#1b2531}
+  .drop.over{border-color:var(--accent);color:var(--fg);background:#1e2e44;box-shadow:inset 0 0 0 3px rgba(88,166,255,.15)}
+  .drop.over::after{content:"ปล่อยไฟล์ตรงนี้";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(88,166,255,.1);font-weight:600;font-size:14px;color:#fff;pointer-events:none}
+  .drop strong{color:var(--accent);display:block;margin-bottom:6px;font-size:13.5px}
+  .drop .formats{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .drop .fmt{font-size:10px;padding:2px 6px;border-radius:4px;background:#0d1117;border:1px solid var(--line);color:var(--dim);font-family:ui-monospace,monospace}
+  .drop .fmt.vid{color:var(--vid);border-color:#5c3a1a;background:#2a1a0e}
+  .drop .paste-hint{font-size:11px;color:var(--dim);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px}
+  .drop .paste-hint kbd{background:#0d1117;border:1px solid var(--line);border-bottom-width:2px;padding:0 5px;border-radius:3px;font-size:10px;font-family:ui-monospace,monospace}
+  .pending-list{margin-top:10px;max-height:140px;overflow-y:auto;background:#0a0d12;border:1px solid var(--line);border-radius:6px;font-size:11.5px}
   .pending-list:empty{display:none}
-  .pending-item{display:flex; align-items:center; gap:8px;
-    padding:6px 9px; border-bottom:1px solid #1a1f28;}
+  .pending-item{display:flex;align-items:center;gap:8px;padding:6px 9px;border-bottom:1px solid #1a1f28}
   .pending-item:last-child{border-bottom:none}
   .pending-item .icon{font-size:14px}
-  .pending-item .name{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0}
-  .pending-item .size{color:var(--dim); font-family:ui-monospace,monospace; font-size:10.5px; flex-shrink:0}
-  .pending-item .kind{font-size:9px; padding:1px 5px; border-radius:3px;
-    background:#0d1117; border:1px solid var(--line); color:var(--dim);
-    text-transform:uppercase; font-family:ui-monospace,monospace; flex-shrink:0;}
-  .pending-item .kind.gif{color:var(--gif); border-color:#4a3070}
-  .pending-item .kind.vid{color:var(--vid); border-color:#5c3a1a}
-  .pending-item .load-btn{font-size:10px; padding:2px 7px; border-radius:4px;
-    background:#1f6feb; border:1px solid #1f6feb; color:#fff; cursor:pointer; flex-shrink:0;}
+  .pending-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .pending-item .size{color:var(--dim);font-family:ui-monospace,monospace;font-size:10.5px;flex-shrink:0}
+  .pending-item .kind{font-size:9px;padding:1px 5px;border-radius:3px;background:#0d1117;border:1px solid var(--line);color:var(--dim);text-transform:uppercase;font-family:ui-monospace,monospace;flex-shrink:0}
+  .pending-item .kind.gif{color:var(--gif);border-color:#4a3070}
+  .pending-item .kind.vid{color:var(--vid);border-color:#5c3a1a}
+  .pending-item .load-btn{font-size:10px;padding:2px 7px;border-radius:4px;background:#1f6feb;border:1px solid #1f6feb;color:#fff;cursor:pointer;flex-shrink:0}
   .pending-item.active{background:#1f2a3a}
   .pending-item.active .name{color:var(--ok)}
-
-  .row{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
   .row.one{grid-template-columns:1fr}
-  label{display:block; font-size:11px; color:var(--dim); margin-bottom:3px}
-  input[type=number],input[type=text],select{width:100%; padding:6px 8px;
-    background:var(--panel2); color:var(--fg); border:1px solid var(--line);
-    border-radius:6px; font-size:12.5px; font-family:inherit;}
-  input:focus,select:focus{outline:none; border-color:var(--accent)}
-  input[type=range]{width:100%; accent-color:var(--accent)}
-  .check{display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer}
-  button{padding:7px 11px; border-radius:6px; border:1px solid var(--line);
-    background:var(--panel2); color:var(--fg); cursor:pointer;
-    font-size:12px; font-family:inherit; font-weight:500;
-    transition:background .12s, border-color .12s;}
-  button:hover:not(:disabled){background:#243040; border-color:#3a4a5e}
-  button:disabled{opacity:.4; cursor:not-allowed}
-  button.primary{background:#1f6feb; border-color:#1f6feb; color:#fff}
+  label{display:block;font-size:11px;color:var(--dim);margin-bottom:3px}
+  input[type=number],input[type=text],select{width:100%;padding:6px 8px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .check{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer}
+  button{padding:7px 11px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);cursor:pointer;font-size:12px;font-family:inherit;font-weight:500;transition:background .12s,border-color .12s}
+  button:hover:not(:disabled){background:#243040;border-color:#3a4a5e}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
   button.primary:hover:not(:disabled){background:#2d7ff9}
-  button.ok{background:#238636; border-color:#238636; color:#fff}
+  button.ok{background:#238636;border-color:#238636;color:#fff}
   button.ok:hover:not(:disabled){background:#2ea043}
-  button.danger{background:#7a2020; border-color:#7a2020; color:#fff}
-  .btns{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+  button.danger{background:#7a2020;border-color:#7a2020;color:#fff}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .btns.full{grid-template-columns:1fr}
-
-  .progress-wrap{display:none; margin-top:10px}
+  .progress-wrap{display:none;margin-top:10px}
   .progress-wrap.show{display:block}
-  .progress{height:8px; background:#0a0d12; border-radius:4px; overflow:hidden; border:1px solid var(--line);}
-  .progress-bar{height:100%; background:linear-gradient(90deg,#1f6feb,#58a6ff); width:0%; transition:width .1s;}
-  .progress-text{font-size:11px; color:var(--dim); margin-top:4px;
-    display:flex; justify-content:space-between;}
-
-  .stage{display:flex; flex-direction:column; gap:12px; min-width:0}
-  .canvas-wrap{background:var(--panel); border:1px solid var(--line);
-    border-radius:10px; padding:12px; min-width:0;}
-  .canvas-head{display:flex; justify-content:space-between; align-items:baseline;
-    margin-bottom:8px; gap:10px; flex-wrap:wrap;}
-  .canvas-title{font-size:13px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis}
+  .progress{height:8px;background:#0a0d12;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+  .progress-bar{height:100%;background:linear-gradient(90deg,#1f6feb,#58a6ff);width:0%;transition:width .1s}
+  .progress-text{font-size:11px;color:var(--dim);margin-top:4px;display:flex;justify-content:space-between}
+  .stage{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .canvas-wrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0}
+  .canvas-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:10px;flex-wrap:wrap}
+  .canvas-title{font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .canvas-title .accent{color:var(--accent)}
-  .canvas-meta{font-size:11.5px; color:var(--dim); font-variant-numeric:tabular-nums; flex-shrink:0}
+  .canvas-meta{font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums;flex-shrink:0}
   .canvas-meta b{color:var(--fg)}
-
-  .canvas-box{display:flex; align-items:center; justify-content:center;
-    width:100%; min-width:0; max-width:100%; overflow:auto; padding:6px;
-    background:#080a0e; border-radius:6px; min-height:120px; contain:paint;}
-
-  canvas{display:block; max-width:100%;
-    image-rendering: pixelated; image-rendering: crisp-edges;
-    image-rendering: -moz-crisp-edges; -ms-interpolation-mode: nearest-neighbor;}
-  #currentFrame{background:repeating-conic-gradient(#2a2f38 0% 25%, #232830 0% 50%) 50%/16px 16px;}
-
-  .sheet-container{position:relative; display:inline-block; line-height:0; max-width:100%;}
-  #sheetCanvas{background:repeating-conic-gradient(#2a2f38 0% 25%, #232830 0% 50%) 50%/20px 20px;}
-  .sheet-highlight{position:absolute; border:2px solid #f0883e; box-sizing:border-box;
-    pointer-events:none; will-change:transform,width,height; display:none;}
+  .canvas-box{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;max-width:100%;overflow:auto;padding:6px;background:#080a0e;border-radius:6px;min-height:120px;contain:paint}
+  canvas{display:block;max-width:100%;image-rendering:pixelated;image-rendering:crisp-edges;image-rendering:-moz-crisp-edges;-ms-interpolation-mode:nearest-neighbor}
+  #currentFrame{background:repeating-conic-gradient(#2a2f38 0% 25%,#232830 0% 50%) 50%/16px 16px}
+  .sheet-container{position:relative;display:inline-block;line-height:0;max-width:100%}
+  #sheetCanvas{background:repeating-conic-gradient(#2a2f38 0% 25%,#232830 0% 50%) 50%/20px 20px}
+  .sheet-highlight{position:absolute;border:2px solid #f0883e;box-sizing:border-box;pointer-events:none;will-change:transform,width,height;display:none}
   .sheet-highlight.show{display:block}
-
-  .filmstrip{display:flex; gap:4px; overflow-x:auto; overflow-y:hidden; padding:6px;
-    background:#080a0e; border-radius:6px; border:1px solid var(--line);
-    margin-top:8px; min-height:70px; align-items:center;
-    scrollbar-width:thin; contain:paint;}
+  .filmstrip{display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;padding:6px;background:#080a0e;border-radius:6px;border:1px solid var(--line);margin-top:8px;min-height:70px;align-items:center;scrollbar-width:thin;contain:paint}
   .filmstrip::-webkit-scrollbar{height:8px}
-  .filmstrip::-webkit-scrollbar-thumb{background:#2a3441; border-radius:4px}
-  .filmstrip canvas{border:2px solid #2a3441; border-radius:3px;
-    cursor:pointer; flex-shrink:0; display:block;
-    image-rendering: pixelated; transition:border-color .1s;}
+  .filmstrip::-webkit-scrollbar-thumb{background:#2a3441;border-radius:4px}
+  .filmstrip canvas{border:2px solid #2a3441;border-radius:3px;cursor:pointer;flex-shrink:0;display:block;image-rendering:pixelated;transition:border-color .1s}
   .filmstrip canvas:hover{border-color:var(--accent)}
-  .filmstrip canvas.active{border-color:#f0883e; box-shadow:0 0 0 1px #f0883e;}
-  .filmstrip-empty{color:var(--dim); font-size:12px; padding:16px; text-align:center; width:100%;}
-
-  .bar{display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap}
-  .pill{font-size:11px; padding:2px 8px; border-radius:20px;
-    background:var(--panel2); border:1px solid var(--line); color:var(--dim);}
-  .pill.ok{color:var(--ok); border-color:#1f4a2b}
-  .pill.gif{color:var(--gif); border-color:#4a3070; background:#1a1430}
-  .pill.vid{color:var(--vid); border-color:#5c3a1a; background:#2a1a0e}
-  .pill.warn{color:var(--warn); border-color:#5c4500; background:#2a2000}
-  .pill.accent{color:var(--accent); border-color:#1f4a80; background:#0d1f33}
-
-  .status{font-size:11.5px; color:var(--dim); min-height:18px;
-    padding:7px 10px; border-radius:6px; background:var(--panel2);
-    border:1px solid var(--line); word-break:break-word;}
-  .status.ok{color:var(--ok)} .status.err{color:var(--err)}
-  .status.gif{color:var(--gif)} .status.vid{color:var(--vid)}
+  .filmstrip canvas.active{border-color:#f0883e;box-shadow:0 0 0 1px #f0883e}
+  .filmstrip-empty{color:var(--dim);font-size:12px;padding:16px;text-align:center;width:100%}
+  .bar{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .pill{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--dim)}
+  .pill.ok{color:var(--ok);border-color:#1f4a2b}
+  .pill.gif{color:var(--gif);border-color:#4a3070;background:#1a1430}
+  .pill.vid{color:var(--vid);border-color:#5c3a1a;background:#2a1a0e}
+  .pill.warn{color:var(--warn);border-color:#5c4500;background:#2a2000}
+  .pill.accent{color:var(--accent);border-color:#1f4a80;background:#0d1f33}
+  .status{font-size:11.5px;color:var(--dim);min-height:18px;padding:7px 10px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);word-break:break-word}
+  .status.ok{color:var(--ok)}.status.err{color:var(--err)}
+  .status.gif{color:var(--gif)}.status.vid{color:var(--vid)}
   .status.warn{color:var(--warn)}
-  .status.loading{color:var(--accent); position:relative; padding-left:26px}
-  .status.loading::before{content:""; position:absolute; left:8px; top:50%;
-    width:12px; height:12px; margin-top:-6px;
-    border:2px solid rgba(88,166,255,.25); border-top-color:var(--accent);
-    border-radius:50%; animation:spin .8s linear infinite;}
+  .status.loading{color:var(--accent);position:relative;padding-left:26px}
+  .status.loading::before{content:"";position:absolute;left:8px;top:50%;width:12px;height:12px;margin-top:-6px;border:2px solid rgba(88,166,255,.25);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-
-  code{background:#0d1117; padding:1px 5px; border-radius:4px;
-    font-family:ui-monospace,Consolas,monospace; font-size:11.5px; color:var(--accent);}
-  .hint{font-size:11.5px; color:var(--dim); line-height:1.65; margin-top:8px}
+  code{background:#0d1117;padding:1px 5px;border-radius:4px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--accent)}
+  .hint{font-size:11.5px;color:var(--dim);line-height:1.65;margin-top:8px}
   .hint b{color:var(--fg)}
-
-  .file-picker{display:flex; flex-direction:column; gap:6px; margin-bottom:10px;}
-  .file-item{display:flex; align-items:center; gap:8px;
-    padding:8px 10px; border-radius:6px;
-    background:var(--panel2); border:1px solid var(--line);
-    cursor:pointer; transition:border-color .12s, background .12s; user-select:none;}
+  .file-picker{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+  .file-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;transition:border-color .12s,background .12s;user-select:none}
   .file-item:hover{border-color:#3a4a5e}
-  .file-item.checked{border-color:var(--accent); background:#182334}
-  .file-item input[type=checkbox]{width:14px; height:14px; accent-color:var(--accent);
-    flex-shrink:0; cursor:pointer;}
-  .file-item .fi-info{flex:1; min-width:0}
-  .file-item .fi-name{font-family:ui-monospace,Consolas,monospace; font-size:12px;
-    color:var(--fg); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .file-item .fi-desc{font-size:10.5px; color:var(--dim); margin-top:1px;}
-  .file-item .fi-size{font-size:10px; color:var(--dim);
-    font-family:ui-monospace,monospace; background:#0d1117; padding:1px 6px;
-    border-radius:3px; flex-shrink:0;}
+  .file-item.checked{border-color:var(--accent);background:#182334}
+  .file-item input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);flex-shrink:0;cursor:pointer}
+  .file-item .fi-info{flex:1;min-width:0}
+  .file-item .fi-name{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--fg);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-item .fi-desc{font-size:10.5px;color:var(--dim);margin-top:1px}
+  .file-item .fi-size{font-size:10px;color:var(--dim);font-family:ui-monospace,monospace;background:#0d1117;padding:1px 6px;border-radius:3px;flex-shrink:0}
   .file-item.lib .fi-name{color:var(--lib)}
   .file-item.exec .fi-name{color:var(--vid)}
-  .file-item .fi-copy{font-size:10px; padding:3px 8px; border-radius:4px;
-    background:#0d1117; border:1px solid var(--line); color:var(--dim);
-    cursor:pointer; flex-shrink:0;}
-  .file-item .fi-copy:hover{color:var(--accent); border-color:var(--accent)}
-
-  .page-tabs{display:none; gap:4px; flex-wrap:wrap; margin-bottom:8px}
-  .page-tab{padding:3px 9px; font-size:11px; border-radius:20px}
-  .page-tab.active{background:#1f6feb; border-color:#1f6feb; color:#fff}
+  .file-item .fi-copy{font-size:10px;padding:3px 8px;border-radius:4px;background:#0d1117;border:1px solid var(--line);color:var(--dim);cursor:pointer;flex-shrink:0}
+  .file-item .fi-copy:hover{color:var(--accent);border-color:var(--accent)}
+  .page-tabs{display:none;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+  .page-tab{padding:3px 9px;font-size:11px;border-radius:20px}
+  .page-tab.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
   .file-item.off{opacity:.38}
   .file-item.off .fi-copy{display:none}
-  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-    background:#1c2430; border:1px solid var(--line); border-radius:8px;
-    padding:10px 16px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.6);
-    opacity:0; pointer-events:none; transition:opacity .25s;
-    z-index:9999; max-width:90vw; display:flex; align-items:center; gap:8px;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c2430;border:1px solid var(--line);border-radius:8px;padding:10px 16px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .25s;z-index:9999;max-width:90vw;display:flex;align-items:center;gap:8px}
   .toast.show{opacity:1}
-  .toast.ok{border-color:#1f4a2b; color:var(--ok)}
-  .toast.err{border-color:#5a1d1d; color:var(--err)}
-  .toast.info{border-color:#1f4a80; color:var(--accent)}
+  .toast.ok{border-color:#1f4a2b;color:var(--ok)}
+  .toast.err{border-color:#5a1d1d;color:var(--err)}
+  .toast.info{border-color:#1f4a80;color:var(--accent)}
 </style>
 </head>
 <body>
@@ -244,7 +161,7 @@
       </div>
       <input type="file" id="file" multiple hidden>
       <div class="pending-list" id="pendingList"></div>
-      <div class="canvas-meta" id="imgInfo" style="margin-top:8px; text-align:center">ยังไม่มีไฟล์</div>
+      <div class="canvas-meta" id="imgInfo" style="margin-top:8px;text-align:center">ยังไม่มีไฟล์</div>
     </div>
 
     <div class="panel" id="panelVideo" style="display:none">
@@ -271,10 +188,7 @@
       </div>
       <div class="progress-wrap" id="progressWrap">
         <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
-        <div class="progress-text">
-          <span id="progressText">รอ…</span>
-          <span id="progressPct">0%</span>
-        </div>
+        <div class="progress-text"><span id="progressText">รอ…</span><span id="progressPct">0%</span></div>
       </div>
       <div class="hint" id="vidHint">—</div>
     </div>
@@ -349,7 +263,7 @@
 
     <div class="panel">
       <h2>5 · เลือกไฟล์ส่งออก</h2>
-      <div class="hint" id="pagedNote" style="display:none;margin:0 0 8px;color:var(--warn)">⚠ อนิเมชั่นถูกแตกเป็นหลายหน้า — รองรับเฉพาะ <b>ForExecutorFromStudio.lua</b> (ไฟล์ Lua อื่นจะถูกข้ามตอน export) · อยากได้ไฟล์เดียวให้เพิ่มขนาดหน้าสูงสุด หรือลดขนาด/จำนวนเฟรม</div>
+      <div class="hint" id="pagedNote" style="display:none;margin:0 0 8px;color:var(--warn)">⚠ อนิเมชั่นถูกแตกเป็นหลายหน้า — รองรับเฉพาะ <b>ForExecutorFromStudio.lua</b></div>
       <div class="file-picker" id="filePicker">
         <div class="file-item checked" data-file="sheet">
           <input type="checkbox" checked>
@@ -359,37 +273,33 @@
           </div>
           <span class="fi-size" id="fiSheetSize">—</span>
         </div>
-
         <div class="file-item lib checked" data-file="lib">
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">SpriteLib.lua</div>
-            <div class="fi-desc">★ lib ใหญ่ · multi-asset folder · Studio + Executor</div>
+            <div class="fi-desc">★ lib ใหญ่ · multi-asset folder</div>
           </div>
           <span class="fi-size">~18 KB</span>
           <button class="fi-copy" data-copy="lib">📋</button>
         </div>
-
         <div class="file-item exec checked" data-file="fromstudio">
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">ForExecutorFromStudio.lua</div>
-            <div class="fi-desc">★ v4.0 · force Visible/Transparency/Stretch + AspectRatio</div>
+            <div class="fi-desc">★ v4.1 · กัน FrameSize 1x1 · target = videoframe</div>
           </div>
           <span class="fi-size">~8 KB</span>
           <button class="fi-copy" data-copy="fromstudio">📋</button>
         </div>
-
         <div class="file-item exec checked" data-file="executor">
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">ForExecutor.lua</div>
-            <div class="fi-desc">★ v5 · loadstring · force Visible/Transparency/Stretch</div>
+            <div class="fi-desc">★ v6 · loadstring</div>
           </div>
           <span class="fi-size">~5 KB</span>
           <button class="fi-copy" data-copy="executor">📋</button>
         </div>
-
         <div class="file-item checked" data-file="frames">
           <input type="checkbox" checked>
           <div class="fi-info">
@@ -399,7 +309,6 @@
           <span class="fi-size">~1 KB</span>
           <button class="fi-copy" data-copy="frames">📋</button>
         </div>
-
         <div class="file-item checked" data-file="player">
           <input type="checkbox" checked>
           <div class="fi-info">
@@ -409,7 +318,6 @@
           <span class="fi-size">~2 KB</span>
           <button class="fi-copy" data-copy="player">📋</button>
         </div>
-
         <div class="file-item checked" data-file="readme">
           <input type="checkbox" checked>
           <div class="fi-info">
@@ -462,7 +370,7 @@
 
     <div class="canvas-wrap">
       <div class="canvas-head">
-        <div class="canvas-title">📦 Sprite Sheet <span class="accent">(ทุกเฟรมในภาพเดียว)</span></div>
+        <div class="canvas-title">📦 Sprite Sheet</div>
         <div class="canvas-meta"><b id="sheetSize">—</b> · <span id="sheetDims">—</span></div>
       </div>
       <div class="page-tabs" id="pageTabs"></div>
@@ -472,9 +380,7 @@
           <div class="sheet-highlight" id="sheetHighlight"></div>
         </div>
       </div>
-      <div class="hint">
-        แต่ละช่อง = <b>1 เฟรม</b> · Export ผ่าน 4 ไฟล์ Lua ที่ต่างกัน (เลือกในแผงซ้าย)
-      </div>
+      <div class="hint">แต่ละช่อง = <b>1 เฟรม</b></div>
     </div>
 
     <div class="canvas-wrap">
@@ -503,25 +409,11 @@ const state = {
   order: "row", fps: 24, idx: 0, acc: 0, playing: true, zoom: "auto",
   fileName: "", pendingFiles: [], activeIndex: -1,
   cancelExtract: false,
-  selected: { sheet: true, lib: true, fromstudio: true, executor: true,
-              frames: true, player: true, readme: true },
+  selected: { sheet: true, lib: true, fromstudio: true, executor: true, frames: true, player: true, readme: true },
 };
 
 const els = {};
-["drop","file","pendingList","imgInfo","panelVideo","panelGif",
- "vidFps","vidMax","vidStartTime","vidEndTime","vidMaxDim",
- "btnExtract","btnCancelExtract","progressWrap","progressBar","progressText","progressPct","vidHint",
- "gifCount","gifStart","gifUseDelays","gifHint",
- "gifBadge","gifBadgeCount","vidBadge","vidBadgeCount","readyBadge",
- "cols","rows","order","packHint","fps","zoom","scrub","frameNum",
- "currentFrame","curFrameTitle","curFrameSize","curFrameZoom",
- "sheetCanvas","sheetHighlight","sheetSize","sheetDims",
- "filmstrip","stripCount","stripVerify",
- "pillFps","pillDur","pillFrame",
- "btnPlay","btnPrev","btnNext","btnFirst",
- "exportFormat","jpgQuality","btnSheet","btnCopyAll",
- "status","toast","fiSheetName","fiSheetSize","maxPage","pageTabs","pagedNote"
-].forEach(id => els[id] = document.getElementById(id));
+["drop","file","pendingList","imgInfo","panelVideo","panelGif","vidFps","vidMax","vidStartTime","vidEndTime","vidMaxDim","btnExtract","btnCancelExtract","progressWrap","progressBar","progressText","progressPct","vidHint","gifCount","gifStart","gifUseDelays","gifHint","gifBadge","gifBadgeCount","vidBadge","vidBadgeCount","readyBadge","cols","rows","order","packHint","fps","zoom","scrub","frameNum","currentFrame","curFrameTitle","curFrameSize","curFrameZoom","sheetCanvas","sheetHighlight","sheetSize","sheetDims","filmstrip","stripCount","stripVerify","pillFps","pillDur","pillFrame","btnPlay","btnPrev","btnNext","btnFirst","exportFormat","jpgQuality","btnSheet","btnCopyAll","status","toast","fiSheetName","fiSheetSize","maxPage","pageTabs","pagedNote"].forEach(id => els[id] = document.getElementById(id));
 
 let _toastTimer = null;
 function toast(msg, kind = "info", ms = 2200) {
@@ -536,16 +428,16 @@ function setStatus(msg, kind) {
 }
 
 const SIGNATURES = [
-  { kind: "gif", test: b => b[0]===0x47 && b[1]===0x49 && b[2]===0x46 && b[3]===0x38 },
-  { kind: "image", test: b => b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47 },
-  { kind: "image", test: b => b[0]===0xFF && b[1]===0xD8 && b[2]===0xFF },
-  { kind: "image", test: b => b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 && b[8]===0x57 && b[9]===0x45 && b[10]===0x42 && b[11]===0x50 },
-  { kind: "image", test: b => b[0]===0x42 && b[1]===0x4D },
-  { kind: "video", test: b => b.length>=12 && b[4]===0x66 && b[5]===0x74 && b[6]===0x79 && b[7]===0x70 },
-  { kind: "video", test: b => b[0]===0x1A && b[1]===0x45 && b[2]===0xDF && b[3]===0xA3 },
-  { kind: "video", test: b => b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 && b[8]===0x41 && b[9]===0x56 && b[10]===0x49 },
-  { kind: "video", test: b => b[0]===0x4F && b[1]===0x67 && b[2]===0x67 && b[3]===0x53 },
-  { kind: "video", test: b => b[0]===0x46 && b[1]===0x4C && b[2]===0x56 },
+  { kind: "gif", test: b => b[0]===0x47&&b[1]===0x49&&b[2]===0x46&&b[3]===0x38 },
+  { kind: "image", test: b => b[0]===0x89&&b[1]===0x50&&b[2]===0x4E&&b[3]===0x47 },
+  { kind: "image", test: b => b[0]===0xFF&&b[1]===0xD8&&b[2]===0xFF },
+  { kind: "image", test: b => b[0]===0x52&&b[1]===0x49&&b[2]===0x46&&b[3]===0x46&&b[8]===0x57&&b[9]===0x45&&b[10]===0x42&&b[11]===0x50 },
+  { kind: "image", test: b => b[0]===0x42&&b[1]===0x4D },
+  { kind: "video", test: b => b.length>=12&&b[4]===0x66&&b[5]===0x74&&b[6]===0x79&&b[7]===0x70 },
+  { kind: "video", test: b => b[0]===0x1A&&b[1]===0x45&&b[2]===0xDF&&b[3]===0xA3 },
+  { kind: "video", test: b => b[0]===0x52&&b[1]===0x49&&b[2]===0x46&&b[3]===0x46&&b[8]===0x41&&b[9]===0x56&&b[10]===0x49 },
+  { kind: "video", test: b => b[0]===0x4F&&b[1]===0x67&&b[2]===0x67&&b[3]===0x53 },
+  { kind: "video", test: b => b[0]===0x46&&b[1]===0x4C&&b[2]===0x56 },
 ];
 async function detectFileType(file) {
   let head = null;
@@ -590,7 +482,7 @@ function frameSize() {
       fh: Math.max(1, Math.floor(state.img.height / state.rows)),
     };
   }
-  return { fw: 1, fh: 1 };
+  return { fw: 0, fh: 0 };
 }
 function getLayout() {
   if (_layout) return _layout;
@@ -599,7 +491,8 @@ function getLayout() {
   const mv = +els.maxPage.value;
   const max = isNaN(mv) ? 2048 : (mv > 0 ? mv : Infinity);
   let pc, pr;
-  if (state.cols * fw <= max && state.rows * fh <= max && state.cols * state.rows >= count) {
+  if (fw < 1 || fh < 1) { pc = state.cols; pr = state.rows; }
+  else if (state.cols * fw <= max && state.rows * fh <= max && state.cols * state.rows >= count) {
     pc = state.cols; pr = state.rows;
   } else if (max === Infinity) {
     const g = computeAutoGrid(count);
@@ -611,8 +504,7 @@ function getLayout() {
     pr = Math.min(fitR, Math.ceil(count / pc));
   }
   const fpp = pc * pr;
-  _layout = { fw, fh, pc, pr, fpp, pages: Math.ceil(count / fpp),
-              pageW: pc * fw, pageH: pr * fh, max, oversize: fw > max || fh > max };
+  _layout = { fw, fh, pc, pr, fpp, pages: Math.ceil(count / fpp), pageW: pc * fw, pageH: pr * fh, max, oversize: fw > max || fh > max };
   return _layout;
 }
 function frameDuration(i) {
@@ -650,8 +542,7 @@ function download(blob, filename) {
 
 let _frames = null, _framesKey = "";
 function getFrames() {
-  const key = [state.sourceType, state.cols, state.rows, state.count, state.start, state.order,
-    state.img ? state.img.src : "g", state.animFrames ? state.animFrames.length : 0].join("|");
+  const key = [state.sourceType, state.cols, state.rows, state.count, state.start, state.order, state.img ? state.img.src : "g", state.animFrames ? state.animFrames.length : 0].join("|");
   if (_framesKey === key && _frames) return _frames;
   const out = [];
   if ((state.sourceType === "gif" || state.sourceType === "video") && state.animFrames) {
@@ -815,7 +706,7 @@ function updateVideoHint() {
     let w = state.videoW, h = state.videoH;
     if (maxDim > 0 && Math.max(w, h) > maxDim) { const s = maxDim / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
     const mb = actual * w * h * 4 / 1048576;
-    mem = " · ใช้แรม ~" + mb.toFixed(0) + " MB" + (mb > 900 ? " <span style=\"color:var(--warn)\">⚠ เยอะ ลดขนาด/จำนวนเฟรม</span>" : "");
+    mem = " · ใช้แรม ~" + mb.toFixed(0) + " MB";
   }
   els.vidHint.innerHTML = "ช่วง <b>" + startT.toFixed(2) + "s – " + endT.toFixed(2) + "s</b> · ดึง <b>" + actual + "</b> เฟรม" + mem;
 }
@@ -991,10 +882,11 @@ function applySheet(file, img) {
   els.vidBadge.classList.remove("show");
   els.panelGif.style.display = "none";
   els.panelVideo.style.display = "none";
-  els.imgInfo.innerHTML = "<b>" + file.name + "</b><br>" + img.width + "×" + img.height + "px · รูปนิ่ง";
+  const fs = frameSize();
+  els.imgInfo.innerHTML = "<b>" + file.name + "</b><br>" + img.width + "×" + img.height + "px · เฟรมละ " + fs.fw + "×" + fs.fh + "px";
   recalc();
   enableExport();
-  setStatus(img.width + "×" + img.height + "px · " + state.count + " เฟรม", "ok");
+  setStatus(img.width + "×" + img.height + "px · " + state.count + " เฟรม (เฟรมละ " + fs.fw + "×" + fs.fh + ")", "ok");
   fullRedraw();
 }
 
@@ -1035,8 +927,7 @@ function refreshPagedUI(L) {
   const paged = L.pages > 1;
   document.querySelectorAll(".file-item").forEach(item => {
     const k = item.dataset.file;
-    if (k === "lib" || k === "executor" || k === "frames" || k === "player")
-      item.classList.toggle("off", paged);
+    if (k === "lib" || k === "executor" || k === "frames" || k === "player") item.classList.toggle("off", paged);
   });
   els.pagedNote.style.display = paged ? "" : "none";
 }
@@ -1044,26 +935,26 @@ function updatePackHint() {
   const L = getLayout();
   const slots = state.cols * state.rows;
   const paged = L.pages > 1;
+  if (L.fw < 1 || L.fh < 1) {
+    els.packHint.innerHTML = '<span style="color:var(--err)">⚠ ยังไม่ได้โหลดไฟล์ — โหลดรูป/วิดีโอ/GIF ก่อน</span>';
+    els.sheetSize.textContent = "—";
+    els.sheetDims.textContent = "—";
+    return;
+  }
   const bigMsg = (L.pageW > 1024 || L.pageH > 1024)
-    ? " <span style=\"color:var(--warn)\">⚠ เกิน 1024×1024 (ถ้าภาพเบลอ/ไม่ขึ้น ลองเลือกหน้า 1024)</span>"
+    ? " <span style=\"color:var(--warn)\">⚠ เกิน 1024×1024</span>"
     : " <span style=\"color:var(--ok)\">✓ ขนาดแนะนำ</span>";
-  const tooBig = (L.pageW > 16384 || L.pageH > 16384 || L.pageW * L.pageH > 268000000)
-    ? " <span style=\"color:var(--err)\">⚠ ใหญ่เกินที่เบราว์เซอร์สร้างภาพได้ อาจ export ไม่ได้ — เลือกแยกหน้าแทน</span>" : "";
   let html;
   if (paged) {
-    html = "แตกเป็น <b>" + L.pages + " หน้า</b> · หน้าละ <b>" + L.pageW + "×" + L.pageH + "px</b> (" +
-      L.pc + "×" + L.pr + " = " + L.fpp + " เฟรม/หน้า) · รวม <b>" + state.count + "</b> เฟรม" + bigMsg;
-    if (L.oversize) html += " <span style=\"color:var(--err)\">⚠ 1 เฟรมใหญ่กว่าหน้าสูงสุด</span>";
+    html = "แตกเป็น <b>" + L.pages + " หน้า</b> · หน้าละ <b>" + L.pageW + "×" + L.pageH + "px</b> (" + L.pc + "×" + L.pr + " = " + L.fpp + " เฟรม/หน้า) · รวม <b>" + state.count + "</b> เฟรม" + bigMsg;
   } else {
     const waste = slots - state.count;
-    const wasteMsg = waste > 0
-      ? " <span style=\"color:var(--warn)\">(เหลือ " + waste + " ช่อง)</span>" : "";
-    html = "Sheet <b>" + L.pageW + "×" + L.pageH + "px</b> · <b>" + L.pc + "×" + L.pr + "</b> = " +
-      slots + " ช่อง · <b>" + state.count + "</b> เฟรม" + wasteMsg + bigMsg;
+    const wasteMsg = waste > 0 ? " <span style=\"color:var(--warn)\">(เหลือ " + waste + " ช่อง)</span>" : "";
+    html = "Sheet <b>" + L.pageW + "×" + L.pageH + "px</b> · <b>" + L.pc + "×" + L.pr + "</b> = " + slots + " ช่อง · <b>" + state.count + "</b> เฟรม (เฟรมละ <b>" + L.fw + "×" + L.fh + "</b>)" + wasteMsg + bigMsg;
   }
-  els.packHint.innerHTML = html + tooBig;
+  els.packHint.innerHTML = html;
   els.sheetSize.textContent = (paged ? L.pages + " หน้า · " : "") + L.pageW + " × " + L.pageH + " px";
-  els.sheetDims.textContent = L.pc + " × " + L.pr + " grid · " + state.count + " เฟรม";
+  els.sheetDims.textContent = L.pc + " × " + L.pr + " grid · เฟรมละ " + L.fw + "×" + L.fh;
   refreshPagedUI(L);
 }
 function updateMeta() {
@@ -1077,11 +968,14 @@ function updateMeta() {
 }
 function updateReadyBadge() {
   els.readyBadge.classList.add("show");
-  els.readyBadge.textContent = "● " + state.cols + "×" + state.rows + " = " + state.count + " เฟรม";
+  const fs = frameSize();
+  if (fs.fw < 1) { els.readyBadge.textContent = "● ยังไม่มีไฟล์"; return; }
+  els.readyBadge.textContent = "● " + state.cols + "×" + state.rows + " = " + state.count + " เฟรม · " + fs.fw + "×" + fs.fh;
 }
 function updateFilePickerSizes() {
   if (state.sourceType === "none") return;
   const L = getLayout();
+  if (L.fw < 1) return;
   const bytesPerPx = els.exportFormat.value === "png" ? 2 : 0.3;
   const approx = Math.round(L.pageW * L.pageH * L.pages * bytesPerPx);
   const ext = els.exportFormat.value;
@@ -1095,8 +989,7 @@ function schedule(cb) {
 }
 function updateFrameMeta() {
   const L = getLayout();
-  els.pillFrame.textContent = "frame " + (state.idx + 1) + " / " + state.count +
-    (L.pages > 1 ? " · หน้า " + (Math.floor(state.idx / L.fpp) + 1) + "/" + L.pages : "");
+  els.pillFrame.textContent = "frame " + (state.idx + 1) + " / " + state.count + (L.pages > 1 ? " · หน้า " + (Math.floor(state.idx / L.fpp) + 1) + "/" + L.pages : "");
   els.frameNum.textContent = String(state.idx + 1);
 }
 function drawCurrentFrame() {
@@ -1166,8 +1059,7 @@ function ensureSheetPreview(force) {
   const start = page * L.fpp, end = Math.min(frames.length, start + L.fpp);
   for (let g = start; g < end; g++) {
     const { c, r } = indexToCell(g - start, L.pc, L.pr, state.order);
-    ctx.drawImage(frames[g], 0, 0, L.fw, L.fh,
-      Math.round(c * cw), Math.round(r * ch), Math.ceil(cw), Math.ceil(ch));
+    ctx.drawImage(frames[g], 0, 0, L.fw, L.fh, Math.round(c * cw), Math.round(r * ch), Math.ceil(cw), Math.ceil(ch));
   }
   if (cw >= 4 && ch >= 4) {
     ctx.save(); ctx.lineWidth = 1;
@@ -1478,8 +1370,7 @@ function parseGif(buffer) {
       }
       const cv = document.createElement("canvas");
       cv.width = screenW; cv.height = screenH;
-      cv.getContext("2d").putImageData(
-        new ImageData(new Uint8ClampedArray(screenBuf), screenW, screenH), 0, 0);
+      cv.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(screenBuf), screenW, screenH), 0, 0);
       frames.push(cv);
       delays.push((gce ? gce.delay : 10) / 100);
       prevDisposal = gce ? gce.disposal : 0;
@@ -1576,47 +1467,44 @@ function buildZip(files) {
   return new Blob([...parts, ...central, eocd], { type: "application/zip" });
 }
 
+/* ★★★ FIX: getCfg ตรวจ FrameSize ก่อน — กัน 1x1 ★★★ */
 function getCfg() {
+  if (state.sourceType === "none") {
+    throw new Error("ยังไม่ได้โหลดไฟล์ — โหลดรูป/วิดีโอ/GIF ก่อน");
+  }
   const L = getLayout();
-  const fps = state.sourceType === "gif"
-    ? Math.max(1, Math.round(averageFps()))
-    : state.fps;
+  if (L.fw < 2 || L.fh < 2) {
+    throw new Error("FrameSize ไม่ถูกต้อง (" + L.fw + "×" + L.fh + ") — โหลดไฟล์ใหม่ หรือตรวจ Columns/Rows ให้พอดีกับรูป");
+  }
+  const fps = state.sourceType === "gif" ? Math.max(1, Math.round(averageFps())) : state.fps;
   return { fw: L.fw, fh: L.fh, sheetW: L.pageW, sheetH: L.pageH, fps, L };
 }
 
 function genSpriteLib() {
   const c = getCfg();
   return `--[[═══════════════════════════════════════════════════════════════════════════
-  SpriteLib v2.3 · Roblox sprite folder
-  ★ cache filename ไม่มีนามสกุล · game:HttpGet first · force style
+  SpriteLib v2.3 · Roblox sprite folder · cache filename ไม่มีนามสกุล
 ═══════════════════════════════════════════════════════════════════════════]]
 
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local function _has(n) return type(_G[n]) == "function" end
-local IS_EXEC = _has("writefile") and _has("readfile") and _has("getcustomasset")
-    and _has("isfile") and _has("isfolder") and _has("makefolder")
+local IS_EXEC = _has("writefile") and _has("readfile") and _has("getcustomasset") and _has("isfile") and _has("isfolder") and _has("makefolder")
 
 local function _httpGet(url)
     local ok, r = pcall(game.HttpGet, game, url, true)
     if ok and type(r) == "string" and #r > 0 and not r:find("<!DOCTYPE html>") then return r end
     if _has("request") then
         local ok2, r2 = pcall(request, { Url = url, Method = "GET" })
-        if ok2 and r2 and r2.Body and #r2.Body > 0 and not r2.Body:find("<!DOCTYPE html>") then
-            return r2.Body
-        end
+        if ok2 and r2 and r2.Body and #r2.Body > 0 and not r2.Body:find("<!DOCTYPE html>") then return r2.Body end
     end
     if _has("http_request") then
         local ok3, r3 = pcall(http_request, { Url = url, Method = "GET" })
-        if ok3 and r3 and r3.Body and #r3.Body > 0 and not r3.Body:find("<!DOCTYPE html>") then
-            return r3.Body
-        end
+        if ok3 and r3 and r3.Body and #r3.Body > 0 and not r3.Body:find("<!DOCTYPE html>") then return r3.Body end
     end
     if _G.syn and _G.syn.request then
         local ok4, r4 = pcall(_G.syn.request, { Url = url, Method = "GET" })
-        if ok4 and r4 and r4.Body and #r4.Body > 0 and not r4.Body:find("<!DOCTYPE html>") then
-            return r4.Body
-        end
+        if ok4 and r4 and r4.Body and #r4.Body > 0 and not r4.Body:find("<!DOCTYPE html>") then return r4.Body end
     end
     error("[SpriteLib] HTTP failed: " .. url)
 end
@@ -1626,10 +1514,7 @@ local function _hash(s)
     for i = 1, #s do h = (h * 33 + s:byte(i)) % 4294967296 end
     return string.format("%08x", h)
 end
-local function _isAsset(v)
-    return type(v) == "string"
-        and (v:match("^rbxassetid://") or v:match("^rbxasset://"))
-end
+local function _isAsset(v) return type(v) == "string" and (v:match("^rbxassetid://") or v:match("^rbxasset://")) end
 local function _sanitize(n) return (tostring(n):gsub("[^%w_%-%.]", "_")) end
 
 local Player = {}; Player.__index = Player
@@ -1651,9 +1536,7 @@ function Player.new(target, assetId, cfg)
 end
 function Player:_setup()
     local t = self.Target
-    t.Visible = true
-    t.ImageTransparency = 0
-    t.BackgroundTransparency = 1
+    t.Visible = true; t.ImageTransparency = 0; t.BackgroundTransparency = 1
     t.Image = self.AssetId
     t.ImageRectSize = self.FrameSize
     t.ImageRectOffset = Vector2.new(0, 0)
@@ -1665,14 +1548,11 @@ function Player:_apply()
     if self.Destroyed or not self.Target then return end
     local i = self.FrameIndex
     local col, row
-    if self.Order == "col" then
-        col = math.floor(i / self.Rows); row = i % self.Rows
-    else
-        col = i % self.Columns; row = math.floor(i / self.Columns)
-    end
+    if self.Order == "col" then col = math.floor(i / self.Rows); row = i % self.Rows
+    else col = i % self.Columns; row = math.floor(i / self.Columns) end
     pcall(function()
-        self.Target.ImageRectOffset = Vector2.new(col * self.FrameSize.X, row * self.FrameSize.Y)
         self.Target.ImageRectSize = self.FrameSize
+        self.Target.ImageRectOffset = Vector2.new(col * self.FrameSize.X, row * self.FrameSize.Y)
     end)
 end
 function Player:Play()
@@ -1693,10 +1573,7 @@ function Player:Play()
         self:_apply()
     end)
 end
-function Player:Pause()
-    self.Playing = false
-    if self.Conn then self.Conn:Disconnect(); self.Conn = nil end
-end
+function Player:Pause() self.Playing = false; if self.Conn then self.Conn:Disconnect(); self.Conn = nil end end
 function Player:Stop() self:Pause(); self.FrameIndex = 0; self:_apply() end
 function Player:SetFrame(i) self.FrameIndex = math.clamp(i, 0, self.FrameCount - 1); self:_apply() end
 function Player:GetFrame() return self.FrameIndex end
@@ -1802,8 +1679,7 @@ function Storage:list()
         local ex = false
         if a.assetId and _isAsset(a.assetId) then ex = true
         elseif a.file and IS_EXEC then ex = isfile(self.path .. "/" .. a.file) end
-        table.insert(out, { name = name, url = a.url, size = a.size or 0,
-            settings = a.settings or {}, exists = ex })
+        table.insert(out, { name = name, url = a.url, size = a.size or 0, settings = a.settings or {}, exists = ex })
     end
     table.sort(out, function(x, y) return x.name < y.name end)
     return out
@@ -1861,8 +1737,7 @@ function SpriteLib.load(url, target, settings)
         assetId = id
     else error("[SpriteLib] external URL ต้องใช้ executor") end
     if not target then
-        return { AssetId = assetId, Config = cfg,
-            Attach = function(_, t) return Player.new(t, assetId, cfg) end }
+        return { AssetId = assetId, Config = cfg, Attach = function(_, t) return Player.new(t, assetId, cfg) end }
     end
     return Player.new(target, assetId, cfg)
 end
@@ -1897,7 +1772,6 @@ end
 return SpriteLib`;
 }
 
-/* FOR EXECUTOR FROM STUDIO v4.0 — แก้เรื่อง "ภาพไม่ขึ้น/เบี้ยว" */
 function genForExecutorFromStudio() {
   const c = getCfg();
   const L = c.L;
@@ -1908,14 +1782,14 @@ function genForExecutorFromStudio() {
     urlLines.push('    "https://raw.githubusercontent.com/USER/REPO/main/' + nm + '",   -- ← หน้า ' + (p + 1));
   }
   return `-- ═══════════════════════════════════════════════════════════════════════
---  ForExecutorFromStudio.lua · v4.0 (FIX ANIMATION · NO DISTORT · ALWAYS VISIBLE)
+--  ForExecutorFromStudio.lua · v4.1 (FIX FrameSize 1x1 · FORCE STYLE)
 -- ═══════════════════════════════════════════════════════════════════════
---  ★ v4.0 แก้ปัญหา:
---    [1] ภาพไม่ขึ้น    → force Visible=true, ImageTransparency=0, Size>0
---    [2] ภาพเบี้ยว     → UIAspectRatioConstraint ตาม FrameSize + ScaleType=Stretch
---    [3] ภาพไม่เป็นอนิเมชั่น → set ImageRectOffset + ImageRectSize ทุกเฟรม
---    [4] ทะลุ/โปร่งใส  → ImageTransparency=0, BackgroundTransparency=1
---    [5] target = "videoframe" บังคับ rename
+--  ★ v4.1:
+--    • ตรวจ FrameSize — ถ้า 1x1 error ทันที (ไม่เล่นภาพเพี้ยน)
+--    • force Visible / ImageTransparency=0 / BackgroundTransparency=1
+--    • Stretch + UIAspectRatioConstraint (AspectRatio = FW/FH) กันเบี้ยว
+--    • set ImageRectSize ก่อน Offset ทุกเฟรม
+--    • cache filename = hash ไม่มีนามสกุล (getcustomasset รับได้)
 --
 --  ★ URL GitHub raw ต้องมี raw. นำหน้า:
 --    ✓ https://raw.githubusercontent.com/USER/REPO/main/file.png
@@ -1934,6 +1808,7 @@ local CFG = {
     Rows          = ${L.pr},
     FramesPerPage = ${L.fpp},
     FrameCount    = ${state.count},
+    -- ★★★ FrameSize ต้องตรงกับที่เว็บคำนวณ (FW × FH px) ★★★
     FrameSize     = Vector2.new(${c.fw}, ${c.fh}),
     Order         = "${state.order}",
     Fps           = ${c.fps},
@@ -1944,9 +1819,6 @@ local CFG = {
     Timeout       = 180,
     Verbose       = true,
     TargetName    = "videoframe",
-    MinSize       = 8,     -- ถ้า Size น้อยกว่านี้ จะตั้ง default
-    ScaleUp       = 4,     -- คูณขนาดถ้าตั้ง default (FW*Scale)
-    AddAspect     = true,  -- ใส่ UIAspectRatioConstraint กันเบี้ยว
 }
 -- ╔═══════════════════════════════════════════════════════════════════╗
 -- ║  ★★★ อย่าแตะอะไรด้านล่างนี้ ★★★                                    ║
@@ -1956,8 +1828,7 @@ do
     local ok, why = pcall(function()
         assert(type(URLS) == "table" and #URLS >= 1, "URLS ต้องมีอย่างน้อย 1 ลิงก์")
         for i, u in ipairs(URLS) do
-            assert(type(u) == "string" and (u:match("^https?://") or u:match("^rbxassetid://") or u:match("^rbxasset://")),
-                ("URLS[%d] ต้องเป็น http(s) link"):format(i))
+            assert(type(u) == "string" and (u:match("^https?://") or u:match("^rbxassetid://") or u:match("^rbxasset://")), ("URLS[%d] ต้องเป็น http(s) link"):format(i))
             assert(u:find("xxxxxxxx") == nil, ("URLS[%d] ลืมแก้ URL!"):format(i))
             assert(u:find("USER/REPO") == nil, ("URLS[%d] ลืมแก้ USER/REPO!"):format(i))
         end
@@ -1968,15 +1839,16 @@ do
         assert(CFG.FrameCount > CFG.FramesPerPage * (#URLS - 1), "URLS เกิน")
         assert(CFG.Order == "row" or CFG.Order == "col", "Order ผิด")
         assert(CFG.Fps >= 1 and CFG.Fps <= 240, "Fps ผิด")
+        -- ★★★ เช็ค FrameSize กัน 1x1 ★★★
+        assert(CFG.FrameSize.X >= 2 and CFG.FrameSize.Y >= 2,
+            "FrameSize เล็กเกินไป (" .. CFG.FrameSize.X .. "×" .. CFG.FrameSize.Y .. ") — โหลด sprite sheet ใหม่ หรือตรวจ Columns/Rows")
     end)
     if not ok then error("[ForExecutorFromStudio] CONFIG: " .. tostring(why), 0) end
     CFG.FrameSize = Vector2.new(math.floor(CFG.FrameSize.X), math.floor(CFG.FrameSize.Y))
 end
 
 do
-    local exec = (type(writefile) == "function")
-        and (type(getcustomasset) == "function")
-        and (type(makefolder) == "function")
+    local exec = (type(writefile) == "function") and (type(getcustomasset) == "function") and (type(makefolder) == "function")
     if not exec then
         warn("[ForExecutorFromStudio] Studio mode — ปกติ → gui2lua ไป Execute บน executor")
         return
@@ -1986,7 +1858,6 @@ end
 local RunService  = game:GetService("RunService")
 local ContentProv = game:GetService("ContentProvider")
 
--- ── HTTP (game:HttpGet first) ────────────────────────────────────────
 local function httpGet(url)
     local lastErr = "unknown"
     do
@@ -1994,8 +1865,7 @@ local function httpGet(url)
         if ok and type(r) == "string" and #r > 0 then
             if not r:find("<!DOCTYPE html>") and not r:find("<html") then
                 if CFG.Verbose then
-                    print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(
-                        #r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0))
+                    print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(#r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0))
                 end
                 return r
             end
@@ -2040,7 +1910,7 @@ local function resolveAsset(url)
     local dir  = root .. "/" .. tostring(CFG.Folder or "from_studio")
     if not isfolder(root) then pcall(makefolder, root) end
     if not isfolder(dir)  then pcall(makefolder, dir)  end
-    local fname = dir .. "/" .. djb2(url)   -- ★ hash ล้วน ไม่มีนามสกุล
+    local fname = dir .. "/" .. djb2(url)
     if CFG.Refresh or not isfile(fname) then
         local body = httpGet(url)
         local ok, werr = pcall(writefile, fname, body)
@@ -2071,125 +1941,84 @@ end
 do
     local t0 = os.clock()
     while pending > 0 do
-        if os.clock() - t0 > CFG.Timeout then
-            error("[ForExecutorFromStudio] timeout " .. CFG.Timeout .. "s", 0)
-        end
+        if os.clock() - t0 > CFG.Timeout then error("[ForExecutorFromStudio] timeout " .. CFG.Timeout .. "s", 0) end
         task.wait()
     end
 end
 for i = 1, N do
-    if not assetIds[i] then
-        error(("[ForExecutorFromStudio] หน้า %d ล้ม: %s"):format(i, tostring(errs[i])), 0)
-    end
+    if not assetIds[i] then error(("[ForExecutorFromStudio] หน้า %d ล้ม: %s"):format(i, tostring(errs[i])), 0) end
 end
 
 local FW, FH = CFG.FrameSize.X, CFG.FrameSize.Y
 local TOTAL  = CFG.FrameCount
 local FPP    = CFG.FramesPerPage
 
--- ═════════════════════════════════════════════════════════════════════
---  TARGET: หา ImageLabel + rename "videoframe"
--- ═════════════════════════════════════════════════════════════════════
 local target
 do
     local parent = (typeof(script) == "Instance") and script.Parent or nil
     local cand = nil
     local want = tostring(CFG.TargetName or "videoframe"):lower()
-
     if parent then
-        if parent.Name:lower() == want
-            and (parent:IsA("ImageLabel") or parent:IsA("ImageButton")) then
-            cand = parent
-        end
+        if parent.Name:lower() == want and (parent:IsA("ImageLabel") or parent:IsA("ImageButton")) then cand = parent end
         if not cand then
             for _, d in ipairs(parent:GetDescendants()) do
-                if d.Name:lower() == want
-                    and (d:IsA("ImageLabel") or d:IsA("ImageButton")) then
-                    cand = d; break
-                end
+                if d.Name:lower() == want and (d:IsA("ImageLabel") or d:IsA("ImageButton")) then cand = d; break end
             end
         end
         if not cand then
-            if parent:IsA("ImageLabel") or parent:IsA("ImageButton") then
-                cand = parent
+            if parent:IsA("ImageLabel") or parent:IsA("ImageButton") then cand = parent
             else
                 for _, d in ipairs(parent:GetDescendants()) do
-                    if d:IsA("ImageLabel") or d:IsA("ImageButton") then
-                        cand = d; break
-                    end
+                    if d:IsA("ImageLabel") or d:IsA("ImageButton") then cand = d; break end
                 end
             end
         end
     end
-
-    if not cand then
-        error("[ForExecutorFromStudio] ไม่เจอ ImageLabel/ImageButton ใต้ " ..
-            (parent and parent:GetFullName() or "script.Parent=nil"), 0)
-    end
-
+    if not cand then error("[ForExecutorFromStudio] ไม่เจอ ImageLabel/ImageButton ใต้ " .. (parent and parent:GetFullName() or "script.Parent=nil"), 0) end
     target = cand
-    if target.Name ~= CFG.TargetName then
-        pcall(function() target.Name = CFG.TargetName end)
-    end
+    if target.Name ~= CFG.TargetName then pcall(function() target.Name = CFG.TargetName end) end
 end
 
--- ═════════════════════════════════════════════════════════════════════
---  ★★★ FORCE STYLE — กัน "ไม่ขึ้นภาพ/เบี้ยว" ★★★
--- ═════════════════════════════════════════════════════════════════════
 local function forceStyle(img, transparent)
     pcall(function() img.Visible = true end)
     pcall(function() img.BackgroundTransparency = 1 end)
     pcall(function() img.BorderSizePixel = 0 end)
-    if not transparent then
-        pcall(function() img.ImageTransparency = 0 end)
-    else
-        pcall(function() img.ImageTransparency = 1 end)
-    end
-    -- ★ Pixelated + Stretch = คมและไม่เบี้ยว (เมื่อ aspect ตรง)
+    pcall(function() img.ImageTransparency = transparent and 1 or 0 end)
     pcall(function() img.ResampleMode = Enum.ResamplerMode.Pixelated end)
     pcall(function() img.ScaleType = Enum.ScaleType.Stretch end)
-    -- ★ Slice ล้างค่า default
     pcall(function() img.SliceCenter = Rect.new(0, 0, 0, 0) end)
     pcall(function() img.SliceScale = 1 end)
 end
 
--- ── target setup ─────────────────────────────────────────────────────
-forceStyle(target, false)   -- target = ตัวที่จะโชว์ (single) หรือตัวคุม (multi)
+forceStyle(target, false)
 
--- ถ้า Size เล็กเกินไป → ตั้ง default
+-- ── target setup ──
 do
+    -- ★ ถ้า ImageLabel ขนาด 0x0 → ตั้งขนาดให้ใหญ่พอ
     local absX = target.AbsoluteSize.X
     local absY = target.AbsoluteSize.Y
-    if absX < (CFG.MinSize or 8) or absY < (CFG.MinSize or 8) then
-        local s = tonumber(CFG.ScaleUp) or 4
-        target.Size = UDim2.fromOffset(FW * s, FH * s)
-        if CFG.Verbose then
-            print(("[TARGET] size was too small (%dx%d) → forced %dx%d"):format(
-                absX, absY, FW * s, FH * s))
-        end
+    if absX < 8 or absY < 8 then
+        target.Size = UDim2.fromOffset(FW * 4, FH * 4)
+        if CFG.Verbose then print(("[TARGET] size small (%dx%d) → forced %dx%d"):format(absX, absY, FW * 4, FH * 4)) end
     end
 end
 
--- ★ UIAspectRatioConstraint — กันเบี้ยว 100%
-if CFG.AddAspect ~= false then
-    local ar = target:FindFirstChild("__SpriteAR")
-    if not ar then
-        ar = Instance.new("UIAspectRatioConstraint")
-        ar.Name = "__SpriteAR"
-        ar.AspectType = Enum.AspectType.FitWithinMaxSize
-        ar.DominantAxis = Enum.DominantAxis.Width
-        ar.Parent = target
-    end
-    ar.AspectRatio = FW / FH
+-- ★ UIAspectRatioConstraint กันเบี้ยว
+local ar = target:FindFirstChild("__SpriteAR")
+if not ar then
+    ar = Instance.new("UIAspectRatioConstraint")
+    ar.Name = "__SpriteAR"
+    ar.AspectType = Enum.AspectType.FitWithinMaxSize
+    ar.DominantAxis = Enum.DominantAxis.Width
+    ar.Parent = target
 end
+ar.AspectRatio = FW / FH
 
--- ── ตั้ง ImageRectSize "ก่อน" ────────────────────────────────────────
+-- ★ set ImageRectSize ก่อน
 pcall(function() target.ImageRectSize = CFG.FrameSize end)
 pcall(function() target.ImageRectOffset = Vector2.new(0, 0) end)
 
--- ═════════════════════════════════════════════════════════════════════
---  LAYERS (multi-page) หรือ single
--- ═════════════════════════════════════════════════════════════════════
+-- ── layers (multi-page) ──
 for _, ch in ipairs(target:GetChildren()) do
     if ch.Name:sub(1, 12) == "__SpritePage" then ch:Destroy() end
 end
@@ -2197,11 +2026,9 @@ end
 local layers = {}
 if N == 1 then
     target.Image = assetIds[1]
-    -- ★ set rect size อีกครั้งหลัง set Image (Roblox อาจ reset)
     pcall(function() target.ImageRectSize = CFG.FrameSize end)
     pcall(function() target.ImageRectOffset = Vector2.new(0, 0) end)
 else
-    -- multi-page: target เป็น container ใส่ layer ลูก
     target.Image = ""
     target.ImageTransparency = 1
     for i = 1, N do
@@ -2213,7 +2040,7 @@ else
         l.ImageColor3 = target.ImageColor3 or Color3.new(1,1,1)
         l.ImageTransparency = 1
         l.Image = assetIds[i]
-        forceStyle(l, true)   -- transparent=true สำหรับ layers ที่ยังไม่ active
+        forceStyle(l, true)
         pcall(function() l.ImageRectSize = CFG.FrameSize end)
         pcall(function() l.ImageRectOffset = Vector2.new(0, 0) end)
         l.Parent = target
@@ -2221,37 +2048,26 @@ else
     end
 end
 
--- ★ PreloadAsync + รอ asset โหลด
 do
     local list = {}
-    if N == 1 then
-        table.insert(list, target)
-    else
-        for _, l in ipairs(layers) do table.insert(list, l) end
-    end
+    if N == 1 then table.insert(list, target)
+    else for _, l in ipairs(layers) do table.insert(list, l) end end
     pcall(function() ContentProv:PreloadAsync(list) end)
-    task.wait(0.2)
+    task.wait(0.25)
 end
 
--- ═════════════════════════════════════════════════════════════════════
---  FRAME POSITION TABLE
--- ═════════════════════════════════════════════════════════════════════
+-- ── frame table ──
 local OFFS, PAGE = {}, {}
 for i = 0, TOTAL - 1 do
     local li = i % FPP
     local col, row
-    if CFG.Order == "col" then
-        col = math.floor(li / CFG.Rows); row = li % CFG.Rows
-    else
-        col = li % CFG.Columns; row = math.floor(li / CFG.Columns)
-    end
+    if CFG.Order == "col" then col = math.floor(li / CFG.Rows); row = li % CFG.Rows
+    else col = li % CFG.Columns; row = math.floor(li / CFG.Columns) end
     OFFS[i + 1] = Vector2.new(math.floor(col * FW), math.floor(row * FH))
     PAGE[i + 1] = math.floor(i / FPP) + 1
 end
 
--- ═════════════════════════════════════════════════════════════════════
---  ENGINE
--- ═════════════════════════════════════════════════════════════════════
+-- ── engine ──
 local idx, acc = 0, 0
 local curPage = 0
 local conn, playing, dead = nil, false, false
@@ -2261,7 +2077,6 @@ local function apply()
     if dead or not target then return end
     local k = idx + 1
     if N == 1 then
-        -- ★ set ImageRectSize ทุกครั้ง (กัน Roblox reset)
         target.ImageRectSize = CFG.FrameSize
         target.ImageRectOffset = OFFS[k]
     else
@@ -2271,10 +2086,8 @@ local function apply()
             layer.ImageRectSize = CFG.FrameSize
             layer.ImageRectOffset = OFFS[k]
             if pg ~= curPage then
-                layer.ImageTransparency = 0     -- ★ show
-                if curPage >= 1 and layers[curPage] then
-                    layers[curPage].ImageTransparency = 1   -- ★ hide เก่า
-                end
+                layer.ImageTransparency = 0
+                if curPage >= 1 and layers[curPage] then layers[curPage].ImageTransparency = 1 end
                 curPage = pg
             end
         end
@@ -2292,7 +2105,6 @@ end
 
 local API = {}
 API.OnFinish = finishedEvent.Event
-
 function API:Play()
     if playing or dead then return end
     playing = true; acc = 0
@@ -2313,10 +2125,7 @@ function API:Play()
         end
     end)
 end
-function API:Pause()
-    playing = false
-    if conn then conn:Disconnect(); conn = nil end
-end
+function API:Pause() playing = false; if conn then conn:Disconnect(); conn = nil end end
 function API:Stop() self:Pause(); idx = 0; acc = 0; apply() end
 function API:SetFrame(i) idx = math.clamp(math.floor(i), 0, TOTAL - 1); apply() end
 function API:GetFrame() return idx end
@@ -2335,34 +2144,26 @@ function API:Destroy()
     if _G.SpriteFromStudio == API then _G.SpriteFromStudio = nil end
 end
 
--- ★ apply ครั้งแรกให้ทุกอย่างเข้าที่ (สำคัญ!)
 apply()
 task.wait(0.05)
 
 if CFG.Verbose then
     print(("[TARGET] %s (%s)"):format(target:GetFullName(), target.ClassName))
-    print(("[TARGET] Visible=%s  ImageTransparency=%.2f  Size=%s  AbsoluteSize=%dx%d"):format(
-        tostring(target.Visible), target.ImageTransparency,
-        tostring(target.Size), target.AbsoluteSize.X, target.AbsoluteSize.Y))
-    print(("[TARGET] ImageRectSize=%s  ScaleType=%s  ResampleMode=%s"):format(
-        tostring(target.ImageRectSize), tostring(target.ScaleType), tostring(target.ResampleMode)))
-    print(("[FRAME ] %dx%d px · grid %dx%d · %d เฟรม · %d หน้า · %d fps"):format(
-        FW, FH, CFG.Columns, CFG.Rows, TOTAL, N, CFG.Fps))
+    print(("[TARGET] Visible=%s  ImgTrans=%.2f  Size=%s  Abs=%dx%d"):format(tostring(target.Visible), target.ImageTransparency, tostring(target.Size), target.AbsoluteSize.X, target.AbsoluteSize.Y))
+    print(("[TARGET] ImageRectSize=%s  ScaleType=%s"):format(tostring(target.ImageRectSize), tostring(target.ScaleType)))
+    print(("[FRAME ] %dx%d px · grid %dx%d · %d เฟรม · %d หน้า · %d fps"):format(FW, FH, CFG.Columns, CFG.Rows, TOTAL, N, CFG.Fps))
 end
 
 if CFG.AutoPlay then API:Play() end
-
 _G.SpriteFromStudio = API
-print(("[ForExecutorFromStudio] ✓ %s (%s) · %d เฟรม · %d หน้า · %d fps · %dx%d"):format(
-    target:GetFullName(), target.Name, TOTAL, N, CFG.Fps, FW, FH))
+print(("[ForExecutorFromStudio] ✓ %s (%s) · %d เฟรม · %d หน้า · %d fps · %dx%d"):format(target:GetFullName(), target.Name, TOTAL, N, CFG.Fps, FW, FH))
 `;
 }
 
-/* FOR EXECUTOR v5 */
 function genForExecutor() {
   const c = getCfg();
   return `--[[═══════════════════════════════════════════════════════════════════
-  ForExecutor.lua · v5 · FORCE STYLE · NO DISTORT · ALWAYS VISIBLE
+  ForExecutor.lua · v6 · FORCE STYLE · FrameSize validated
 ═══════════════════════════════════════════════════════════════════════]]
 
 -- ★★★ แก้ตรงนี้ ★★★
@@ -2376,13 +2177,16 @@ local CFG = {
     Fps        = ${c.fps},
     Loop       = true,
     AutoPlay   = true,
-    Scale      = 6,                 -- ขยายกี่เท่า
+    Scale      = 4,
     Storage    = "default",
     Draggable  = true,
     Verbose    = true,
-    AddAspect  = true,
 }
 -- ★★★ ไม่ต้องแก้ด้านล่าง ★★★
+
+if CFG.FrameSize.X < 2 or CFG.FrameSize.Y < 2 then
+    error("[ForExecutor] FrameSize ไม่ถูกต้อง (" .. CFG.FrameSize.X .. "×" .. CFG.FrameSize.Y .. ") — โหลด sprite sheet ใหม่ที่เว็บแล้ว export อีกครั้ง", 0)
+end
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -2393,24 +2197,17 @@ local function http(url)
     do
         local ok, r = pcall(game.HttpGet, game, url, true)
         if ok and type(r) == "string" and #r > 0 and not r:find("<!DOCTYPE html>") then
-            if CFG.Verbose then
-                print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(
-                    #r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0))
-            end
+            if CFG.Verbose then print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(#r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0)) end
             return r
         end
     end
     if type(request) == "function" then
         local ok, r = pcall(request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then
-            return r.Body
-        end
+        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then return r.Body end
     end
     if type(http_request) == "function" then
         local ok, r = pcall(http_request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then
-            return r.Body
-        end
+        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then return r.Body end
     end
     error("[ForExecutor] HTTP failed: " .. url, 0)
 end
@@ -2477,11 +2274,9 @@ stroke.Color = Color3.fromRGB(88, 166, 255)
 stroke.Transparency = 0.4
 stroke.Parent = frame
 
--- ★ ImageLabel ขนาดพอดี aspect
 local image = Instance.new("ImageLabel")
 image.Name = "videoframe"
 image.Size = UDim2.fromOffset(dispW, dispH)
-image.Position = UDim2.fromOffset(0, 0)
 image.BackgroundTransparency = 1
 image.BorderSizePixel = 0
 image.Image = assetId
@@ -2493,16 +2288,13 @@ image.ScaleType = Enum.ScaleType.Stretch
 pcall(function() image.ResampleMode = Enum.ResamplerMode.Pixelated end)
 image.Parent = frame
 
-if CFG.AddAspect ~= false then
-    local ar = Instance.new("UIAspectRatioConstraint")
-    ar.Name = "__SpriteAR"
-    ar.AspectRatio = FW / FH
-    ar.AspectType = Enum.AspectType.FitWithinMaxSize
-    ar.DominantAxis = Enum.DominantAxis.Width
-    ar.Parent = image
-end
+local ar = Instance.new("UIAspectRatioConstraint")
+ar.Name = "__SpriteAR"
+ar.AspectRatio = FW / FH
+ar.AspectType = Enum.AspectType.FitWithinMaxSize
+ar.DominantAxis = Enum.DominantAxis.Width
+ar.Parent = image
 
--- Preload
 pcall(function() ContentProv:PreloadAsync({ image }) end)
 task.wait(0.1)
 
@@ -2511,11 +2303,8 @@ local idx, acc, conn, playing, dead = 0, 0, nil, false, false
 local function apply()
     if dead then return end
     local col, row
-    if CFG.Order == "col" then
-        col = math.floor(idx / CFG.Rows); row = idx % CFG.Rows
-    else
-        col = idx % CFG.Columns; row = math.floor(idx / CFG.Columns)
-    end
+    if CFG.Order == "col" then col = math.floor(idx / CFG.Rows); row = idx % CFG.Rows
+    else col = idx % CFG.Columns; row = math.floor(idx / CFG.Columns) end
     image.ImageRectSize = CFG.FrameSize
     image.ImageRectOffset = Vector2.new(col * FW, row * FH)
 end
@@ -2538,10 +2327,7 @@ function API:Play()
         apply()
     end)
 end
-function API:Pause()
-    playing = false
-    if conn then conn:Disconnect(); conn = nil end
-end
+function API:Pause() playing = false; if conn then conn:Disconnect(); conn = nil end end
 function API:Stop() self:Pause(); idx = 0; apply() end
 function API:SetFrame(i) idx = math.clamp(i, 0, CFG.FrameCount - 1); apply() end
 function API:SetFps(n) CFG.Fps = math.max(1, n) end
@@ -2585,11 +2371,9 @@ mkBtn("Restart", function() API:Stop(); API:Play(); playBtn.Text = "Pause" end)
 mkBtn("Close", function() API:Destroy() end)
 
 if CFG.AutoPlay then API:Play() end
-
 _G.SpriteExec = API
 _G.SpriteExecGui = gui
-print(("[ForExecutor] ✓ %d เฟรม · %d fps · image %dx%d → screen %dx%d"):format(
-    CFG.FrameCount, CFG.Fps, FW, FH, dispW, dispH))
+print(("[ForExecutor] ✓ %d เฟรม · %d fps · image %dx%d → screen %dx%d"):format(CFG.FrameCount, CFG.Fps, FW, FH, dispW, dispH))
 `;
 }
 
@@ -2650,11 +2434,8 @@ end
 function VideoPlayer:_applyFrame()
 \tlocal i = self.FrameIndex
 \tlocal col, row
-\tif self.Order == "col" then
-\t\tcol = math.floor(i / self.Rows); row = i % self.Rows
-\telse
-\t\tcol = i % self.Columns; row = math.floor(i / self.Columns)
-\tend
+\tif self.Order == "col" then col = math.floor(i / self.Rows); row = i % self.Rows
+\telse col = i % self.Columns; row = math.floor(i / self.Columns) end
 \tself.Target.ImageRectSize = self.FrameSize
 \tself.Target.ImageRectOffset = Vector2.new(col * self.FrameSize.X, row * self.FrameSize.Y)
 end
@@ -2697,39 +2478,30 @@ function genReadme(ext, fmt) {
 ====================================================
 
 ═══ ข้อมูล Sheet ═══
-  จำนวนหน้า: ${L.pages}${paged ? " (ไฟล์ใหญ่ ถูกแตกอัตโนมัติ)" : ""}
+  จำนวนหน้า: ${L.pages}
   ขนาดต่อหน้า: ${c.sheetW} × ${c.sheetH} px
-  ขนาด 1 เฟรม: ${c.fw} × ${c.fh} px
+  ขนาด 1 เฟรม: ${c.fw} × ${c.fh} px   ★ ตรวจแล้ว
   ตารางต่อหน้า: ${L.pc} × ${L.pr} (${L.fpp} เฟรม/หน้า)
   จำนวนเฟรมรวม: ${state.count}
-  ลำดับ: ${state.order === "row" ? "ซ้าย→ขวา, บน→ล่าง" : "บน→ล่าง, ซ้าย→ขวา"}
+  ลำดับ: ${state.order}
   FPS: ${c.fps}
   รูปแบบ: ${fmt}
 
-═══ ไฟล์ที่ได้ ═══
-  ${sheetName}
-  ForExecutorFromStudio.lua   ★ v4.0 (fix animation)
-${paged ? "" : "  SpriteLib.lua (v2.3) · ForExecutor.lua (v5) · Frames.lua · VideoPlayer.lua\n"}
-═══ ★★★ v4.0 / v5 แก้อะไร ★★★ ═══
-  1. Force Visible=true ทุกเฟรม → กัน "ภาพไม่ขึ้น"
-  2. Force ImageTransparency=0 → ไม่โปร่งใส
-  3. Force ScaleType=Stretch + UIAspectRatioConstraint → ไม่เบี้ยว
-  4. Set ImageRectSize ก่อน AND หลัง Image = ... (Roblox reset)
-  5. Set ImageRectOffset + ImageRectSize ทุกเฟรม (สำคัญ!)
-  6. PreloadAsync + task.wait(0.2) → asset โหลดเสร็จก่อนเล่น
-  7. ถ้า target.Size เล็กกว่า MinSize → ตั้ง default ScaleUp × FrameSize
-  8. Clear SliceCenter/SliceScale ที่อาจค้าง
+═══ ★★★ แก้บั๊ก FrameSize 1x1 ★★★ ═══
+  สาเหตุ: กด export/copy ตอนยังไม่ได้โหลดไฟล์ (sourceType=none)
+  แก้: ตรวจใน getCfg() — ถ้า FrameSize < 2×2 → throw error ทันที
+  ผลลัพธ์: ลบปัญหา LUA มี FrameSize = Vector2.new(1,1) แล้วเล่นไม่เป็นอนิเมชั่น
 
-═══ เรื่อง URL ═══
-  GitHub raw ต้องมี raw. นำหน้า:
-    ✓ https://raw.githubusercontent.com/imc72s/Assets-SS/main/pf.png
-    ✗ https://githubusercontent.com/...
+═══ URL GitHub raw ═══
+  ✓ https://raw.githubusercontent.com/USER/REPO/main/pf.png
+  ✗ https://githubusercontent.com/...  (404)
+  ✗ .../COMMIT_SHA/pf.png (ถ้า commit นั้นไม่มีไฟล์)
 
 ═══ Cache ═══
-  workspace/SpriteLib/from_studio/<hash8>   (ไม่มีนามสกุล)
+  workspace/SpriteLib/from_studio/<hash8>
 
 ═══ API ═══
-  _G.SpriteFromStudio:Pause() / :Play() / :SetFrame(n) / :SetFps(n) / :GetPage()
+  _G.SpriteFromStudio:Pause() / :Play() / :SetFrame(n) / :SetFps(n)
 `;
 }
 
@@ -2754,11 +2526,12 @@ function disableExport() {
   els.btnCopyAll.disabled = true;
 }
 async function exportZip() {
-  if (state.sourceType === "none") return;
+  if (state.sourceType === "none") { toast("❌ โหลดไฟล์ก่อน", "err"); return; }
   els.btnSheet.disabled = true;
   setStatus("แพ็ค sprite sheet…", "loading");
   try {
     const L = getLayout();
+    if (L.fw < 2 || L.fh < 2) throw new Error("FrameSize ไม่ถูกต้อง — โหลดไฟล์ใหม่");
     const paged = L.pages > 1;
     const fmt = els.exportFormat.value;
     const quality = Math.max(0.6, Math.min(1, (+els.jpgQuality.value || 98) / 100));
@@ -2789,9 +2562,8 @@ async function exportZip() {
     if (state.selected.readme)     files.push({ name: "README.txt", data: enc.encode(genReadme(ext, fmt.toUpperCase())) });
 
     download(buildZip(files), "roblox_sprite.zip");
-    setStatus("เสร็จ — " + files.length + " ไฟล์ · " + (paged ? L.pages + " หน้า × " : "") +
-      L.pageW + "×" + L.pageH + "px · " + state.count + " เฟรม", "ok");
-    toast("✓ ดาวน์โหลด " + files.length + " ไฟล์" + (paged ? " (" + L.pages + " หน้า)" : ""), "ok", 2500);
+    setStatus("เสร็จ — " + files.length + " ไฟล์ · " + L.pageW + "×" + L.pageH + "px · เฟรมละ " + L.fw + "×" + L.fh, "ok");
+    toast("✓ ดาวน์โหลด " + files.length + " ไฟล์", "ok", 2500);
   } catch (err) {
     console.error(err);
     setStatus("ส่งออกล้มเหลว: " + err.message, "err");
@@ -2829,13 +2601,18 @@ document.querySelectorAll(".file-item").forEach(item => {
 document.querySelectorAll(".fi-copy").forEach(btn => {
   btn.addEventListener("click", e => {
     e.stopPropagation();
+    if (state.sourceType === "none") { toast("❌ โหลดไฟล์ก่อน", "err", 3000); return; }
     const k = btn.dataset.copy;
     if (k !== "fromstudio" && pagedBlocked()) return;
-    if (k === "lib")        copyText(genSpriteLib(), "SpriteLib.lua");
-    if (k === "fromstudio") copyText(genForExecutorFromStudio(), "ForExecutorFromStudio.lua");
-    if (k === "executor")   copyText(genForExecutor(), "ForExecutor.lua");
-    if (k === "frames")     copyText(genFramesLua(), "Frames.lua");
-    if (k === "player")     copyText(genPlayerLua(), "VideoPlayer.lua");
+    try {
+      if (k === "lib")        copyText(genSpriteLib(), "SpriteLib.lua");
+      if (k === "fromstudio") copyText(genForExecutorFromStudio(), "ForExecutorFromStudio.lua");
+      if (k === "executor")   copyText(genForExecutor(), "ForExecutor.lua");
+      if (k === "frames")     copyText(genFramesLua(), "Frames.lua");
+      if (k === "player")     copyText(genPlayerLua(), "VideoPlayer.lua");
+    } catch (err) {
+      toast("❌ " + err.message, "err", 4000);
+    }
   });
 });
 
@@ -2895,7 +2672,13 @@ els.btnNext.addEventListener("click", () => setIdx((state.idx + 1) % state.count
 els.btnPrev.addEventListener("click", () => setIdx((state.idx - 1 + state.count) % state.count));
 els.btnFirst.addEventListener("click", () => { state.acc = 0; setIdx(0); });
 els.btnSheet.addEventListener("click", exportZip);
-els.btnCopyAll.addEventListener("click", () => { if (!pagedBlocked()) copyText(genSpriteLib(), "SpriteLib.lua"); });
+els.btnCopyAll.addEventListener("click", () => {
+  if (state.sourceType === "none") { toast("❌ โหลดไฟล์ก่อน", "err", 3000); return; }
+  if (!pagedBlocked()) {
+    try { copyText(genSpriteLib(), "SpriteLib.lua"); }
+    catch (err) { toast("❌ " + err.message, "err", 4000); }
+  }
+});
 document.addEventListener("keydown", e => {
   const tag = e.target.tagName;
   if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
