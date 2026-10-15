@@ -307,9 +307,11 @@
       <div class="row one">
         <label>ขนาดหน้า sheet สูงสุด (ไฟล์ใหญ่จะแตกเป็นหลายรูปให้เอง)</label>
         <select id="maxPage">
+          <option value="0" selected>ไม่แยก — ภาพเดียวทั้งหมด</option>
           <option value="1024">1024 px (เข้ากันได้สุด)</option>
-          <option value="2048" selected>2048 px</option>
+          <option value="2048">2048 px</option>
           <option value="4096">4096 px (ไฟล์ใหญ่มาก)</option>
+          
         </select>
       </div>
       <div class="hint" id="packHint">—</div>
@@ -599,10 +601,14 @@ function getLayout() {
   if (_layout) return _layout;
   const fs = frameSize();
   const fw = fs.fw, fh = fs.fh, count = Math.max(1, state.count);
-  const max = (+els.maxPage.value) || 2048;
+  const mv = +els.maxPage.value;
+  const max = isNaN(mv) ? 2048 : (mv > 0 ? mv : Infinity);
   let pc, pr;
   if (state.cols * fw <= max && state.rows * fh <= max && state.cols * state.rows >= count) {
     pc = state.cols; pr = state.rows;            // ใส่ได้หน้าเดียวตามตารางที่ตั้ง
+  } else if (max === Infinity) {
+    const g = computeAutoGrid(count);            // ไม่แยก: จัดตารางใหม่ให้พอดีทุกเฟรมในภาพเดียว
+    pc = g.cols; pr = g.rows;
   } else {
     const fitC = Math.max(1, Math.floor(max / fw));
     const fitR = Math.max(1, Math.floor(max / fh));
@@ -1054,6 +1060,8 @@ function updatePackHint() {
   const bigMsg = (L.pageW > 1024 || L.pageH > 1024)
     ? " <span style=\"color:var(--warn)\">⚠ เกิน 1024×1024 (ถ้าภาพเบลอ/ไม่ขึ้น ลองเลือกหน้า 1024)</span>"
     : " <span style=\"color:var(--ok)\">✓ ขนาดแนะนำ</span>";
+  const tooBig = (L.pageW > 16384 || L.pageH > 16384 || L.pageW * L.pageH > 268000000)
+    ? " <span style=\"color:var(--err)\">⚠ ใหญ่เกินที่เบราว์เซอร์สร้างภาพได้ อาจ export ไม่ได้ — เลือกแยกหน้าแทน</span>" : "";
   let html;
   if (paged) {
     html = "แตกเป็น <b>" + L.pages + " หน้า</b> · หน้าละ <b>" + L.pageW + "×" + L.pageH + "px</b> (" +
@@ -1066,7 +1074,7 @@ function updatePackHint() {
     html = "Sheet <b>" + L.pageW + "×" + L.pageH + "px</b> · <b>" + L.pc + "×" + L.pr + "</b> = " +
       slots + " ช่อง · <b>" + state.count + "</b> เฟรม" + wasteMsg + bigMsg;
   }
-  els.packHint.innerHTML = html;
+  els.packHint.innerHTML = html + tooBig;
   els.sheetSize.textContent = (paged ? L.pages + " หน้า · " : "") + L.pageW + " × " + L.pageH + " px";
   els.sheetDims.textContent = L.pc + " × " + L.pr + " grid · " + state.count + " เฟรม";
   refreshPagedUI(L);
