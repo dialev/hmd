@@ -14,11 +14,9 @@
   .badge{display:none;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:20px}
   .badge.show{display:inline-flex}
   .badge.gif{background:#1a1430;border:1px solid #4a3070;color:var(--gif)}
-  .badge.gif::before{content:"●";font-size:8px}
   .badge.vid{background:#2a1a0e;border:1px solid #5c3a1a;color:var(--vid)}
-  .badge.vid::before{content:"●";font-size:8px}
   .badge.ok{background:#0e2a17;border:1px solid #1f4a2b;color:var(--ok)}
-  .badge.ok::before{content:"●";font-size:8px}
+  .badge.gif::before,.badge.vid::before,.badge.ok::before{content:"●";font-size:8px}
   .app{display:grid;grid-template-columns:340px minmax(0,1fr);gap:14px;padding:14px;max-width:1700px;margin:0 auto;align-items:start}
   .app>*{min-width:0}
   @media(max-width:1000px){.app{grid-template-columns:1fr}}
@@ -82,7 +80,7 @@
   #currentFrame{background:repeating-conic-gradient(#2a2f38 0% 25%,#232830 0% 50%) 50%/16px 16px}
   .sheet-container{position:relative;display:inline-block;line-height:0;max-width:100%}
   #sheetCanvas{background:repeating-conic-gradient(#2a2f38 0% 25%,#232830 0% 50%) 50%/20px 20px}
-  .sheet-highlight{position:absolute;border:2px solid #f0883e;box-sizing:border-box;pointer-events:none;will-change:transform,width,height;display:none}
+  .sheet-highlight{position:absolute;border:2px solid #f0883e;box-sizing:border-box;pointer-events:none;display:none}
   .sheet-highlight.show{display:block}
   .filmstrip{display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;padding:6px;background:#080a0e;border-radius:6px;border:1px solid var(--line);margin-top:8px;min-height:70px;align-items:center;scrollbar-width:thin;contain:paint}
   .filmstrip::-webkit-scrollbar{height:8px}
@@ -136,7 +134,7 @@
 
 <header>
   <h1>🎬 Media → Sprite Sheet + Lua Export</h1>
-  <span class="sub">วิดีโอ · GIF · รูปภาพ → PNG + Lua 4 แบบ</span>
+  <span class="sub">Sprite Sheet · Individual Frames · Flip · 5-Layer Player</span>
   <span class="badge gif" id="gifBadge">GIF: <b id="gifBadgeCount">0</b></span>
   <span class="badge vid" id="vidBadge">VIDEO: <b id="vidBadgeCount">0</b></span>
   <span class="badge ok" id="readyBadge">● พร้อม</span>
@@ -205,7 +203,28 @@
     </div>
 
     <div class="panel">
-      <h2>3 · จัดวางตาราง</h2>
+      <h2>3 · โหมด & Flip</h2>
+      <div class="row one">
+        <label>รูปแบบการส่งออก</label>
+        <select id="exportMode">
+          <option value="sheet">Sprite Sheet (ภาพเดียว)</option>
+          <option value="frames">แยกเฟรม (sprite_001.png, sprite_002.png, ...)</option>
+        </select>
+      </div>
+      <div class="row one">
+        <label>พลิกภาพ (Flip)</label>
+        <select id="flipMode">
+          <option value="none">ปกติ</option>
+          <option value="x">พลิกซ้าย-ขวา (X)</option>
+          <option value="y">พลิกบน-ล่าง (Y)</option>
+          <option value="xy">พลิกทั้ง X และ Y</option>
+        </select>
+      </div>
+      <div class="hint" id="modeHint">—</div>
+    </div>
+
+    <div class="panel" id="panelLayout">
+      <h2>4 · จัดวางตาราง (Sprite Sheet)</h2>
       <div class="row">
         <div><label>Columns</label><input type="number" id="cols" value="8" min="1" max="64"></div>
         <div><label>Rows</label><input type="number" id="rows" value="8" min="1" max="64"></div>
@@ -220,7 +239,7 @@
       <div class="row one">
         <label>ขนาดหน้า sheet สูงสุด</label>
         <select id="maxPage">
-          <option value="0" selected>ไม่แยก — ภาพเดียวทั้งหมด</option>
+          <option value="0" selected>ไม่แยก</option>
           <option value="1024">1024 px</option>
           <option value="2048">2048 px</option>
           <option value="4096">4096 px</option>
@@ -230,7 +249,7 @@
     </div>
 
     <div class="panel">
-      <h2>4 · พรีวิว</h2>
+      <h2>5 · พรีวิว</h2>
       <div class="row">
         <div><label>FPS</label><input type="number" id="fps" value="24" min="1" max="120"></div>
         <div>
@@ -261,8 +280,8 @@
     </div>
 
     <div class="panel">
-      <h2>5 · เลือกไฟล์ส่งออก</h2>
-      <div class="hint" id="pagedNote" style="display:none;margin:0 0 8px;color:var(--warn)">⚠ อนิเมชั่นถูกแตกเป็นหลายหน้า — รองรับเฉพาะ <b>ForExecutorFromStudio.lua</b></div>
+      <h2>6 · เลือกไฟล์ส่งออก</h2>
+      <div class="hint" id="pagedNote" style="display:none;margin:0 0 8px;color:var(--warn)">⚠ อนิเมชั่นถูกแตกเป็นหลายหน้า</div>
       <div class="file-picker" id="filePicker">
         <div class="file-item checked" data-file="sheet">
           <input type="checkbox" checked>
@@ -272,58 +291,48 @@
           </div>
           <span class="fi-size" id="fiSheetSize">—</span>
         </div>
-        <div class="file-item lib checked" data-file="lib">
+        <div class="file-item checked" data-file="frames">
           <input type="checkbox" checked>
           <div class="fi-info">
-            <div class="fi-name">SpriteLib.lua</div>
-            <div class="fi-desc">★ lib ใหญ่ · multi-asset folder</div>
+            <div class="fi-name" id="fiFramesName">sprite_001…NNN.png</div>
+            <div class="fi-desc">แยกเฟรม · ใช้กับ 5-layer player</div>
           </div>
-          <span class="fi-size">~18 KB</span>
-          <button class="fi-copy" data-copy="lib">📋</button>
+          <span class="fi-size" id="fiFramesSize">—</span>
         </div>
         <div class="file-item exec checked" data-file="fromstudio">
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">ForExecutorFromStudio.lua</div>
-            <div class="fi-desc">★ v5.0 · ลบ AspectRatio เก่า · Image first → wait → RectSize</div>
+            <div class="fi-desc">★ v6.0 · sprite sheet player · fresh ImageLabel</div>
           </div>
-          <span class="fi-size">~9 KB</span>
+          <span class="fi-size">~10 KB</span>
           <button class="fi-copy" data-copy="fromstudio">📋</button>
         </div>
-        <div class="file-item exec checked" data-file="executor">
+        <div class="file-item exec checked" data-file="framesplayer">
           <input type="checkbox" checked>
           <div class="fi-info">
-            <div class="fi-name">ForExecutor.lua</div>
-            <div class="fi-desc">★ v6.5 · Image first → wait → RectSize</div>
+            <div class="fi-name">FramesPlayer.lua</div>
+            <div class="fi-desc">★ v1.0 · 5-layer circular buffer player</div>
           </div>
-          <span class="fi-size">~5 KB</span>
-          <button class="fi-copy" data-copy="executor">📋</button>
+          <span class="fi-size">~7 KB</span>
+          <button class="fi-copy" data-copy="framesplayer">📋</button>
         </div>
-        <div class="file-item checked" data-file="frames">
+        <div class="file-item checked" data-file="frameslua">
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">Frames.lua</div>
-            <div class="fi-desc">config (ใช้กับ VideoPlayer.lua)</div>
+            <div class="fi-desc">config (sprite sheet)</div>
           </div>
           <span class="fi-size">~1 KB</span>
-          <button class="fi-copy" data-copy="frames">📋</button>
-        </div>
-        <div class="file-item checked" data-file="player">
-          <input type="checkbox" checked>
-          <div class="fi-info">
-            <div class="fi-name">VideoPlayer.lua</div>
-            <div class="fi-desc">player แบบ require() สำหรับ Studio</div>
-          </div>
-          <span class="fi-size">~2 KB</span>
-          <button class="fi-copy" data-copy="player">📋</button>
+          <button class="fi-copy" data-copy="frameslua">📋</button>
         </div>
         <div class="file-item checked" data-file="readme">
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">README.txt</div>
-            <div class="fi-desc">วิธีใช้งานทุกไฟล์</div>
+            <div class="fi-desc">วิธีใช้งาน</div>
           </div>
-          <span class="fi-size">~5 KB</span>
+          <span class="fi-size">~3 KB</span>
         </div>
       </div>
 
@@ -340,10 +349,6 @@
 
       <div class="btns full">
         <button id="btnSheet" class="ok" disabled>⬇ ดาวน์โหลด ZIP</button>
-      </div>
-      <div style="height:6px"></div>
-      <div class="btns full">
-        <button id="btnCopyAll" disabled>📋 คัดลอก SpriteLib.lua</button>
       </div>
 
       <div style="height:10px"></div>
@@ -408,11 +413,13 @@ const state = {
   order: "row", fps: 24, idx: 0, acc: 0, playing: true, zoom: "auto",
   fileName: "", pendingFiles: [], activeIndex: -1,
   cancelExtract: false,
-  selected: { sheet: true, lib: true, fromstudio: true, executor: true, frames: true, player: true, readme: true },
+  flipMode: "none",
+  exportMode: "sheet",
+  selected: { sheet: true, frames: true, fromstudio: true, framesplayer: true, frameslua: true, readme: true },
 };
 
 const els = {};
-["drop","file","pendingList","imgInfo","panelVideo","panelGif","vidFps","vidMax","vidStartTime","vidEndTime","vidMaxDim","btnExtract","btnCancelExtract","progressWrap","progressBar","progressText","progressPct","vidHint","gifCount","gifStart","gifUseDelays","gifHint","gifBadge","gifBadgeCount","vidBadge","vidBadgeCount","readyBadge","cols","rows","order","packHint","fps","zoom","scrub","frameNum","currentFrame","curFrameTitle","curFrameSize","curFrameZoom","sheetCanvas","sheetHighlight","sheetSize","sheetDims","filmstrip","stripCount","stripVerify","pillFps","pillDur","pillFrame","btnPlay","btnPrev","btnNext","btnFirst","exportFormat","jpgQuality","btnSheet","btnCopyAll","status","toast","fiSheetName","fiSheetSize","maxPage","pageTabs","pagedNote"].forEach(id => els[id] = document.getElementById(id));
+["drop","file","pendingList","imgInfo","panelVideo","panelGif","panelLayout","vidFps","vidMax","vidStartTime","vidEndTime","vidMaxDim","btnExtract","btnCancelExtract","progressWrap","progressBar","progressText","progressPct","vidHint","gifCount","gifStart","gifUseDelays","gifHint","gifBadge","gifBadgeCount","vidBadge","vidBadgeCount","readyBadge","cols","rows","order","packHint","fps","zoom","scrub","frameNum","currentFrame","curFrameTitle","curFrameSize","curFrameZoom","sheetCanvas","sheetHighlight","sheetSize","sheetDims","filmstrip","stripCount","stripVerify","pillFps","pillDur","pillFrame","btnPlay","btnPrev","btnNext","btnFirst","exportFormat","jpgQuality","btnSheet","status","toast","fiSheetName","fiSheetSize","fiFramesName","fiFramesSize","maxPage","pageTabs","pagedNote","exportMode","flipMode","modeHint"].forEach(id => els[id] = document.getElementById(id));
 
 let _toastTimer = null;
 function toast(msg, kind = "info", ms = 2200) {
@@ -471,6 +478,25 @@ function indexToCell(i, cols, rows, order) {
   if (order === "col") return { c: Math.floor(i/rows), r: i%rows };
   return { c: i%cols, r: Math.floor(i/cols) };
 }
+function pad3(n) { return String(n).padStart(3, "0"); }
+
+/* ★ FLIP helper */
+function flipCanvas(src, fx, fy) {
+  if (!fx && !fy) return src;
+  const cv = document.createElement("canvas");
+  cv.width = src.width; cv.height = src.height;
+  const ctx = cv.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.translate(fx ? cv.width : 0, fy ? cv.height : 0);
+  ctx.scale(fx ? -1 : 1, fy ? -1 : 1);
+  ctx.drawImage(src, 0, 0);
+  return cv;
+}
+function currentFlip() {
+  const m = state.flipMode;
+  return { fx: m === "x" || m === "xy", fy: m === "y" || m === "xy" };
+}
+
 function frameSize() {
   if ((state.sourceType === "gif" || state.sourceType === "video") && state.animFrames && state.animFrames[0]) {
     return { fw: state.animFrames[0].width, fh: state.animFrames[0].height };
@@ -539,16 +565,18 @@ function download(blob, filename) {
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
 }
 
+/* ★ getFrames applies flip */
 let _frames = null, _framesKey = "";
 function getFrames() {
-  const key = [state.sourceType, state.cols, state.rows, state.count, state.start, state.order, state.img ? state.img.src : "g", state.animFrames ? state.animFrames.length : 0].join("|");
+  const { fx, fy } = currentFlip();
+  const key = [state.sourceType, state.cols, state.rows, state.count, state.start, state.order, fx, fy, state.img ? state.img.src : "g", state.animFrames ? state.animFrames.length : 0].join("|");
   if (_framesKey === key && _frames) return _frames;
   const out = [];
   if ((state.sourceType === "gif" || state.sourceType === "video") && state.animFrames) {
     for (let i = 0; i < state.count; i++) {
       const f = state.animFrames[state.start + i];
       if (!f) break;
-      out.push(f);
+      out.push(fx || fy ? flipCanvas(f, fx, fy) : f);
     }
   } else if (state.sourceType === "sheet" && state.img) {
     const fs = frameSize();
@@ -557,22 +585,21 @@ function getFrames() {
       const g = state.start + i;
       if (g >= total) break;
       const { c, r } = indexToCell(g, state.cols, state.rows, state.order);
-      const cv = document.createElement("canvas");
+      let cv = document.createElement("canvas");
       const ctx = makeCrisp(cv, fs.fw, fs.fh);
       ctx.drawImage(state.img, c * fs.fw, r * fs.fh, fs.fw, fs.fh, 0, 0, fs.fw, fs.fh);
+      if (fx || fy) cv = flipCanvas(cv, fx, fy);
       out.push(cv);
     }
   }
   _frames = out; _framesKey = key;
   return out;
 }
-let _sheetBase = null, _sheetBaseKey = "";
 let _frameHashes = null, _frameHashesKey = "";
 let _layout = null;
 function invalidateCache() {
   _layout = null;
   _frames = null; _framesKey = "";
-  _sheetBase = null; _sheetBaseKey = "";
   _frameHashes = null; _frameHashesKey = "";
 }
 
@@ -643,14 +670,11 @@ async function loadVideoFile(file) {
   els.gifBadge.classList.remove("show");
   els.progressWrap.classList.remove("show");
   disableExport();
-
   if (state.videoElement) { try { state.videoElement.src = ""; state.videoElement.load(); } catch(_){} }
   if (state.videoURL) { URL.revokeObjectURL(state.videoURL); state.videoURL = null; }
-
   const url = URL.createObjectURL(file);
   const video = document.createElement("video");
   video.src = url; video.muted = true; video.playsInline = true; video.preload = "auto";
-
   try {
     await new Promise((res, rej) => {
       const t = setTimeout(() => rej(new Error("หมดเวลาโหลด")), 15000);
@@ -663,7 +687,6 @@ async function loadVideoFile(file) {
     toast("❌ " + err.message, "err", 5000);
     return;
   }
-
   if (!isFinite(video.duration) || video.duration === 0) {
     await new Promise(res => {
       const onUpdate = () => { video.removeEventListener("timeupdate", onUpdate); video.currentTime = 0; res(); };
@@ -671,13 +694,11 @@ async function loadVideoFile(file) {
       video.currentTime = 1e101;
     });
   }
-
   const duration = video.duration;
   const W = video.videoWidth, H = video.videoHeight;
   if (!W || !H || !duration || duration <= 0) {
     URL.revokeObjectURL(url); setStatus("วิดีโอผิดปกติ", "err"); return;
   }
-
   state.videoElement = video; state.videoURL = url;
   state.videoDuration = duration; state.videoW = W; state.videoH = H;
   state.videoFileName = file.name;
@@ -737,12 +758,10 @@ async function extractVideoFrames() {
     outW = Math.max(1, Math.round(outW * scale));
     outH = Math.max(1, Math.round(outH * scale));
   }
-
   state.cancelExtract = false;
   els.btnExtract.disabled = true;
   els.btnCancelExtract.disabled = false;
   els.progressWrap.classList.add("show");
-
   const frames = [];
   const t0 = performance.now();
   try {
@@ -924,10 +943,6 @@ function recalc() {
 }
 function refreshPagedUI(L) {
   const paged = L.pages > 1;
-  document.querySelectorAll(".file-item").forEach(item => {
-    const k = item.dataset.file;
-    if (k === "lib" || k === "executor" || k === "frames" || k === "player") item.classList.toggle("off", paged);
-  });
   els.pagedNote.style.display = paged ? "" : "none";
 }
 function updatePackHint() {
@@ -935,7 +950,7 @@ function updatePackHint() {
   const slots = state.cols * state.rows;
   const paged = L.pages > 1;
   if (L.fw < 1 || L.fh < 1) {
-    els.packHint.innerHTML = '<span style="color:var(--err)">⚠ ยังไม่ได้โหลดไฟล์ — โหลดรูป/วิดีโอ/GIF ก่อน</span>';
+    els.packHint.innerHTML = '<span style="color:var(--err)">⚠ ยังไม่ได้โหลดไฟล์</span>';
     els.sheetSize.textContent = "—";
     els.sheetDims.textContent = "—";
     return;
@@ -945,7 +960,7 @@ function updatePackHint() {
     : " <span style=\"color:var(--ok)\">✓ ขนาดแนะนำ</span>";
   let html;
   if (paged) {
-    html = "แตกเป็น <b>" + L.pages + " หน้า</b> · หน้าละ <b>" + L.pageW + "×" + L.pageH + "px</b> (" + L.pc + "×" + L.pr + " = " + L.fpp + " เฟรม/หน้า) · รวม <b>" + state.count + "</b> เฟรม" + bigMsg;
+    html = "แตกเป็น <b>" + L.pages + " หน้า</b> · หน้าละ <b>" + L.pageW + "×" + L.pageH + "px</b> · รวม <b>" + state.count + "</b> เฟรม" + bigMsg;
   } else {
     const waste = slots - state.count;
     const wasteMsg = waste > 0 ? " <span style=\"color:var(--warn)\">(เหลือ " + waste + " ช่อง)</span>" : "";
@@ -975,11 +990,14 @@ function updateFilePickerSizes() {
   if (state.sourceType === "none") return;
   const L = getLayout();
   if (L.fw < 1) return;
-  const bytesPerPx = els.exportFormat.value === "png" ? 2 : 0.3;
-  const approx = Math.round(L.pageW * L.pageH * L.pages * bytesPerPx);
   const ext = els.exportFormat.value;
+  const bytesPerPx = ext === "png" ? 2 : 0.3;
+  const approxSheet = Math.round(L.pageW * L.pageH * L.pages * bytesPerPx);
+  const approxFrames = Math.round(L.fw * L.fh * state.count * bytesPerPx);
   els.fiSheetName.textContent = L.pages > 1 ? "sprite_sheet_1…" + L.pages + "." + ext : "sprite_sheet." + ext;
-  els.fiSheetSize.textContent = "~" + formatBytes(approx);
+  els.fiSheetSize.textContent = "~" + formatBytes(approxSheet);
+  els.fiFramesName.textContent = "sprite_001…" + pad3(state.count) + "." + ext + " (" + state.count + " ไฟล์)";
+  els.fiFramesSize.textContent = "~" + formatBytes(approxFrames);
 }
 
 function schedule(cb) {
@@ -1028,7 +1046,6 @@ function buildPageTabs(L, page) {
     const b = document.createElement("button");
     b.className = "page-tab" + (p === page ? " active" : "");
     b.textContent = "หน้า " + (p + 1);
-    b.title = "เฟรม " + (p * L.fpp + 1) + "–" + Math.min(state.count, (p + 1) * L.fpp);
     b.addEventListener("click", () => setIdx(p * L.fpp));
     frag.appendChild(b);
   }
@@ -1041,7 +1058,6 @@ function ensureSheetPreview(force) {
   const L = getLayout();
   const page = Math.min(L.pages - 1, Math.floor(state.idx / L.fpp));
   if (!force && _prev && _prev.L === L && _prev.page === page && _prev.fk === _framesKey) return;
-
   const maxW = 800, maxH = 480;
   const z = Math.min(1, maxW / L.pageW, maxH / L.pageH);
   const dispW = Math.max(1, Math.round(L.pageW * z));
@@ -1053,26 +1069,11 @@ function ensureSheetPreview(force) {
   ctx.imageSmoothingEnabled = z < 1;
   if (z < 1) ctx.imageSmoothingQuality = "high";
   ctx.clearRect(0, 0, dispW, dispH);
-
   const cw = L.fw * z, ch = L.fh * z;
   const start = page * L.fpp, end = Math.min(frames.length, start + L.fpp);
   for (let g = start; g < end; g++) {
     const { c, r } = indexToCell(g - start, L.pc, L.pr, state.order);
     ctx.drawImage(frames[g], 0, 0, L.fw, L.fh, Math.round(c * cw), Math.round(r * ch), Math.ceil(cw), Math.ceil(ch));
-  }
-  if (cw >= 4 && ch >= 4) {
-    ctx.save(); ctx.lineWidth = 1;
-    for (let c = 0; c <= L.pc; c++) {
-      const x = Math.round(c * cw) + 0.5;
-      ctx.strokeStyle = "rgba(0,0,0,0.55)"; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, dispH); ctx.stroke();
-      ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.beginPath(); ctx.moveTo(x + 1, 0); ctx.lineTo(x + 1, dispH); ctx.stroke();
-    }
-    for (let r = 0; r <= L.pr; r++) {
-      const y = Math.round(r * ch) + 0.5;
-      ctx.strokeStyle = "rgba(0,0,0,0.55)"; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(dispW, y); ctx.stroke();
-      ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.beginPath(); ctx.moveTo(0, y + 1); ctx.lineTo(dispW, y + 1); ctx.stroke();
-    }
-    ctx.restore();
   }
   if (cw >= 20 && ch >= 20) {
     const fsize = Math.max(10, Math.min(22, Math.floor(Math.min(cw, ch) / 3)));
@@ -1090,7 +1091,6 @@ function ensureSheetPreview(force) {
     }
   }
   _prev = { L, page, fk: _framesKey, dispW, dispH, z };
-
   hl.style.left = "0px"; hl.style.top = "0px";
   hl.style.width = cw + "px"; hl.style.height = ch + "px";
   hl.style.borderWidth = Math.max(2, Math.round(Math.min(cw, ch) / 32)) + "px";
@@ -1469,276 +1469,12 @@ function buildZip(files) {
 function getCfg() {
   if (state.sourceType === "none") throw new Error("ยังไม่ได้โหลดไฟล์ — โหลดรูป/วิดีโอ/GIF ก่อน");
   const L = getLayout();
-  if (L.fw < 2 || L.fh < 2) throw new Error("FrameSize ไม่ถูกต้อง (" + L.fw + "×" + L.fh + ") — โหลดไฟล์ใหม่ หรือตรวจ Columns/Rows");
+  if (L.fw < 2 || L.fh < 2) throw new Error("FrameSize ไม่ถูกต้อง (" + L.fw + "×" + L.fh + ")");
   const fps = state.sourceType === "gif" ? Math.max(1, Math.round(averageFps())) : state.fps;
   return { fw: L.fw, fh: L.fh, sheetW: L.pageW, sheetH: L.pageH, fps, L };
 }
 
-function genSpriteLib() {
-  const c = getCfg();
-  return `--[[ SpriteLib v2.3 · cache filename ไม่มีนามสกุล · game:HttpGet first ]]
-
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
-local function _has(n) return type(_G[n]) == "function" end
-local IS_EXEC = _has("writefile") and _has("readfile") and _has("getcustomasset") and _has("isfile") and _has("isfolder") and _has("makefolder")
-
-local function _httpGet(url)
-    local ok, r = pcall(game.HttpGet, game, url, true)
-    if ok and type(r) == "string" and #r > 0 and not r:find("<!DOCTYPE html>") then return r end
-    if _has("request") then
-        local ok2, r2 = pcall(request, { Url = url, Method = "GET" })
-        if ok2 and r2 and r2.Body and #r2.Body > 0 and not r2.Body:find("<!DOCTYPE html>") then return r2.Body end
-    end
-    if _has("http_request") then
-        local ok3, r3 = pcall(http_request, { Url = url, Method = "GET" })
-        if ok3 and r3 and r3.Body and #r3.Body > 0 and not r3.Body:find("<!DOCTYPE html>") then return r3.Body end
-    end
-    error("[SpriteLib] HTTP failed: " .. url)
-end
-
-local function _hash(s)
-    local h = 5381
-    for i = 1, #s do h = (h * 33 + s:byte(i)) % 4294967296 end
-    return string.format("%08x", h)
-end
-local function _isAsset(v) return type(v) == "string" and (v:match("^rbxassetid://") or v:match("^rbxasset://")) end
-local function _sanitize(n) return (tostring(n):gsub("[^%w_%-%.]", "_")) end
-
-local Player = {}; Player.__index = Player
-function Player.new(target, assetId, cfg)
-    local self = setmetatable({}, Player)
-    self.Target = target; self.AssetId = assetId
-    self.Columns = cfg.Columns or 8
-    self.Rows = cfg.Rows or 8
-    self.FrameCount = cfg.FrameCount or (self.Columns * self.Rows)
-    self.FrameSize = cfg.FrameSize or Vector2.new(64, 64)
-    self.Order = cfg.Order or "row"
-    self.Fps = cfg.Fps or 24
-    self.Loop = cfg.Loop ~= false
-    self.FrameIndex = 0; self.Accum = 0; self.Playing = false
-    self.Conn = nil; self.Destroyed = false
-    self:_setup()
-    if cfg.AutoPlay ~= false then self:Play() end
-    return self
-end
-function Player:_setup()
-    local t = self.Target
-    t.Visible = true; t.ImageTransparency = 0; t.BackgroundTransparency = 1
-    t.Image = self.AssetId
-    task.wait(0.3)
-    t.ImageRectSize = self.FrameSize
-    t.ImageRectOffset = Vector2.new(0, 0)
-    pcall(function() t.ResampleMode = Enum.ResamplerMode.Pixelated end)
-    pcall(function() t.ScaleType = Enum.ScaleType.Stretch end)
-    self:_apply()
-end
-function Player:_apply()
-    if self.Destroyed or not self.Target then return end
-    local i = self.FrameIndex
-    local col, row
-    if self.Order == "col" then col = math.floor(i / self.Rows); row = i % self.Rows
-    else col = i % self.Columns; row = math.floor(i / self.Columns) end
-    pcall(function()
-        self.Target.ImageRectSize = self.FrameSize
-        self.Target.ImageRectOffset = Vector2.new(col * self.FrameSize.X, row * self.FrameSize.Y)
-    end)
-end
-function Player:Play()
-    if self.Playing or self.Destroyed then return end
-    self.Playing = true; self.Accum = 0
-    self.Conn = RunService.RenderStepped:Connect(function(dt)
-        if self.Destroyed then return end
-        self.Accum = self.Accum + dt * self.Fps
-        local g = 0
-        while self.Accum >= 1 and g < 240 do
-            g = g + 1; self.Accum = self.Accum - 1
-            self.FrameIndex = self.FrameIndex + 1
-            if self.FrameIndex >= self.FrameCount then
-                if self.Loop then self.FrameIndex = 0
-                else self.FrameIndex = self.FrameCount - 1; self:Pause() end
-            end
-        end
-        self:_apply()
-    end)
-end
-function Player:Pause() self.Playing = false; if self.Conn then self.Conn:Disconnect(); self.Conn = nil end end
-function Player:Stop() self:Pause(); self.FrameIndex = 0; self:_apply() end
-function Player:SetFrame(i) self.FrameIndex = math.clamp(i, 0, self.FrameCount - 1); self:_apply() end
-function Player:GetFrame() return self.FrameIndex end
-function Player:SetFps(n) self.Fps = math.max(1, n) end
-function Player:SetLoop(b) self.Loop = b and true or false end
-function Player:IsPlaying() return self.Playing end
-function Player:Destroy() self:Pause(); self.Destroyed = true; self.Target = nil end
-
-local Storage = {}; Storage.__index = Storage
-local ROOT = "SpriteLib"
-function Storage.new(name)
-    local self = setmetatable({}, Storage)
-    self.name = _sanitize(name or "default")
-    self.path = ROOT .. "/" .. self.name
-    self.mfPath = self.path .. "/manifest.json"
-    self.manifest = { assets = {} }
-    if IS_EXEC then
-        if not isfolder(ROOT) then pcall(makefolder, ROOT) end
-        if not isfolder(self.path) then pcall(makefolder, self.path) end
-        if isfile(self.mfPath) then
-            local ok, raw = pcall(readfile, self.mfPath)
-            if ok and raw and raw ~= "" then
-                local ok2, dec = pcall(function() return HttpService:JSONDecode(raw) end)
-                if ok2 and dec and type(dec.assets) == "table" then self.manifest = dec end
-            end
-        end
-    end
-    return self
-end
-function Storage:_save()
-    if not IS_EXEC then return end
-    local ok, s = pcall(function() return HttpService:JSONEncode(self.manifest) end)
-    if ok then pcall(writefile, self.mfPath, s) end
-end
-function Storage:getPath() return self.path end
-function Storage:getName() return self.name end
-function Storage:add(name, url, settings)
-    if type(name) ~= "string" or name == "" then return false, "name required" end
-    if type(url) ~= "string" or url == "" then return false, "url required" end
-    name = _sanitize(name); settings = settings or {}
-    if _isAsset(url) then
-        self.manifest.assets[name] = { url = url, assetId = url, settings = settings, time = os.time(), size = 0 }
-        self:_save(); return true, url
-    end
-    if not IS_EXEC then return false, "external URL ต้องใช้ executor" end
-    local existing = self.manifest.assets[name]
-    if existing and existing.url == url and existing.file then
-        local fp = self.path .. "/" .. existing.file
-        if isfile(fp) then return true, self:_toId(fp) end
-    end
-    local ok, body = pcall(_httpGet, url)
-    if not ok or not body or #body == 0 then return false, "download failed" end
-    local fname = _hash(url)
-    local fpath = self.path .. "/" .. fname
-    local wok = pcall(writefile, fpath, body)
-    if not wok then return false, "write failed" end
-    self.manifest.assets[name] = { file = fname, url = url, settings = settings, time = os.time(), size = #body }
-    self:_save(); return true, self:_toId(fpath)
-end
-function Storage:_toId(path)
-    local ok, id = pcall(getcustomasset, path)
-    if ok then return id end
-    return path
-end
-function Storage:get(name)
-    name = _sanitize(name)
-    local a = self.manifest.assets[name]
-    if not a then return nil end
-    if a.assetId and _isAsset(a.assetId) then return a.assetId end
-    if a.file then
-        local fp = self.path .. "/" .. a.file
-        if IS_EXEC and isfile(fp) then
-            local id = self:_toId(fp)
-            a.assetId = id; return id
-        end
-    end
-    return nil
-end
-function Storage:getSettings(name)
-    name = _sanitize(name)
-    local a = self.manifest.assets[name]
-    return a and a.settings or nil
-end
-function Storage:play(name, target, overrides)
-    name = _sanitize(name)
-    local a = self.manifest.assets[name]
-    if not a then error("[SpriteLib] not found: " .. name) end
-    local assetId = self:get(name)
-    if not assetId then error("[SpriteLib] assetId failed") end
-    local cfg = {}
-    for k, v in pairs(SpriteLib.Config) do cfg[k] = v end
-    if a.settings then for k, v in pairs(a.settings) do cfg[k] = v end end
-    if overrides then for k, v in pairs(overrides) do cfg[k] = v end end
-    return Player.new(target, assetId, cfg)
-end
-function Storage:list()
-    local out = {}
-    for name, a in pairs(self.manifest.assets) do
-        local ex = false
-        if a.assetId and _isAsset(a.assetId) then ex = true
-        elseif a.file and IS_EXEC then ex = isfile(self.path .. "/" .. a.file) end
-        table.insert(out, { name = name, url = a.url, size = a.size or 0, settings = a.settings or {}, exists = ex })
-    end
-    table.sort(out, function(x, y) return x.name < y.name end)
-    return out
-end
-function Storage:has(name) return self.manifest.assets[_sanitize(name)] ~= nil end
-function Storage:remove(name)
-    name = _sanitize(name)
-    local a = self.manifest.assets[name]
-    if not a then return false end
-    if a.file and IS_EXEC then
-        local fp = self.path .. "/" .. a.file
-        if isfile(fp) then pcall(delfile, fp) end
-    end
-    self.manifest.assets[name] = nil; self:_save(); return true
-end
-function Storage:clear()
-    if IS_EXEC then
-        for _, a in pairs(self.manifest.assets) do
-            if a.file then
-                local fp = self.path .. "/" .. a.file
-                if isfile(fp) then pcall(delfile, fp) end
-            end
-        end
-    end
-    self.manifest.assets = {}; self:_save()
-end
-
-local SpriteLib = {}
-SpriteLib.Version = "2.3"
-SpriteLib.Config = {
-    Columns = ${state.cols},
-    Rows = ${state.rows},
-    FrameCount = ${state.count},
-    FrameSize = Vector2.new(${c.fw}, ${c.fh}),
-    Order = "${state.order}",
-    Fps = ${c.fps},
-    Loop = true,
-    AutoPlay = true,
-    Storage = "default",
-}
-function SpriteLib.isExecutor() return IS_EXEC end
-function SpriteLib.isStudio() return not IS_EXEC end
-function SpriteLib.datastorage(name) return Storage.new(name or "default") end
-function SpriteLib.load(url, target, settings)
-    settings = settings or {}
-    local cfg = {}
-    for k, v in pairs(SpriteLib.Config) do cfg[k] = v end
-    for k, v in pairs(settings) do cfg[k] = v end
-    local assetId
-    if _isAsset(url) then assetId = url
-    elseif IS_EXEC then
-        local st = Storage.new(cfg.Storage or "default")
-        local ok, id = st:add("_single_" .. _hash(url), url, cfg)
-        if not ok then error("[SpriteLib] " .. tostring(id)) end
-        assetId = id
-    else error("[SpriteLib] external URL ต้องใช้ executor") end
-    if not target then
-        return { AssetId = assetId, Config = cfg, Attach = function(_, t) return Player.new(t, assetId, cfg) end }
-    end
-    return Player.new(target, assetId, cfg)
-end
-function SpriteLib.preload(url, opts)
-    opts = opts or {}
-    local st = Storage.new(opts.Storage or "default")
-    local name = opts.Name or ("_single_" .. _hash(url))
-    local ok, id = st:add(name, url, opts.Settings or {})
-    if not ok then error("[SpriteLib] preload: " .. tostring(id)) end
-    return id
-end
-function SpriteLib.clearCache(name) Storage.new(name or "default"):clear() end
-return SpriteLib`;
-}
-
-/* FOR EXECUTOR FROM STUDIO v5.0 */
+/* ★★★ ForExecutorFromStudio v6.0 — FRESH ImageLabel approach ★★★ */
 function genForExecutorFromStudio() {
   const c = getCfg();
   const L = c.L;
@@ -1749,21 +1485,13 @@ function genForExecutorFromStudio() {
     urlLines.push('    "https://raw.githubusercontent.com/USER/REPO/main/' + nm + '",   -- ← หน้า ' + (p + 1));
   }
   return `-- ═══════════════════════════════════════════════════════════════════════
---  ForExecutorFromStudio.lua · v5.0 · FINAL (BLACK IMAGE SOLVED)
+--  ForExecutorFromStudio.lua · v6.0 · FRESH IMAGELABEL APPROACH
 -- ═══════════════════════════════════════════════════════════════════════
---  ★★★ สาเหตุที่ภาพดำ (แก้ใน v5.0) ★★★
---    [1] ลบ UIAspectRatioConstraint เก่าของ gui2lua ออก (มันทับของเรา)
---    [2] ลำดับสำคัญ: set Image → รอ 0.5s → set ImageRectSize/Offset
---      (ถ้าตั้ง RectSize ก่อน Image → Roblox reset เป็น 0,0 → ดำ)
---    [3] ตั้ง BackgroundColor3 + BgTransparency=0.3 เห็นสี
---    [4] PreloadAsync + callback ตรวจ asset status
---    [5] ล้าง SliceCenter/SliceScale/ImageColor3 ที่ค้าง
---    [6] force Visible=true, ImageTransparency=0
+--  ★★★ v6.0 ใช้กลยุทธ์ใหม่: สร้าง ImageLabel ใหม่เอี่ยม
+--    ไม่ใช้ตัวเก่าของ gui2lua (ที่มี UIAspectRatioConstraint + BGColor ค้าง)
+--    → ป้องกัน 100% ที่ Roblox reset property / conflict
 -- ═══════════════════════════════════════════════════════════════════════
 
--- ╔═══════════════════════════════════════════════════════════════════╗
--- ║  ★★★ แก้เฉพาะในกรอบนี้ ★★★                                        ║
--- ╚═══════════════════════════════════════════════════════════════════╝
 local URLS = {
 ${urlLines.join("\n")}
 }
@@ -1783,10 +1511,8 @@ local CFG = {
     Timeout       = 180,
     Verbose       = true,
     TargetName    = "videoframe",
+    KeepOldLabel  = false,   -- true = เก็บ videoframe เก่าไว้ (ซ่อน) | false = ลบทิ้ง
 }
--- ╔═══════════════════════════════════════════════════════════════════╗
--- ║  ★★★ อย่าแตะอะไรด้านล่างนี้ ★★★                                    ║
--- ╚═══════════════════════════════════════════════════════════════════╝
 
 do
     local ok, why = pcall(function()
@@ -1796,23 +1522,17 @@ do
             assert(u:find("xxxxxxxx") == nil, ("URLS[%d] ลืมแก้ URL!"):format(i))
             assert(u:find("USER/REPO") == nil, ("URLS[%d] ลืมแก้ USER/REPO!"):format(i))
         end
-        assert(CFG.Columns >= 1 and CFG.Rows >= 1, "Columns/Rows ต้อง >= 1")
-        assert(CFG.FramesPerPage == CFG.Columns * CFG.Rows, "FramesPerPage ต้อง = Columns × Rows")
-        assert(CFG.FrameCount >= 1, "FrameCount ต้อง >= 1")
+        assert(CFG.FramesPerPage == CFG.Columns * CFG.Rows, "FramesPerPage ผิด")
         assert(CFG.FrameCount <= CFG.FramesPerPage * #URLS, "FrameCount > หน้าที่มี")
-        assert(CFG.FrameCount > CFG.FramesPerPage * (#URLS - 1), "URLS เกิน")
-        assert(CFG.Order == "row" or CFG.Order == "col", "Order ผิด")
-        assert(CFG.Fps >= 1 and CFG.Fps <= 240, "Fps ผิด")
-        assert(CFG.FrameSize.X >= 2 and CFG.FrameSize.Y >= 2, "FrameSize เล็กเกินไป — โหลดไฟล์ใหม่")
+        assert(CFG.FrameSize.X >= 2 and CFG.FrameSize.Y >= 2, "FrameSize เล็กเกินไป")
     end)
-    if not ok then error("[ForExecutorFromStudio] CONFIG: " .. tostring(why), 0) end
-    CFG.FrameSize = Vector2.new(math.floor(CFG.FrameSize.X), math.floor(CFG.FrameSize.Y))
+    if not ok then error("[sprite] CONFIG: " .. tostring(why), 0) end
 end
 
 do
     local exec = (type(writefile) == "function") and (type(getcustomasset) == "function") and (type(makefolder) == "function")
     if not exec then
-        warn("[ForExecutorFromStudio] Studio mode — ปกติ → gui2lua ไป Execute บน executor")
+        warn("[sprite] Studio mode — ปกติ → gui2lua ไป Execute บน executor")
         return
     end
 end
@@ -1820,33 +1540,28 @@ end
 local RunService  = game:GetService("RunService")
 local ContentProv = game:GetService("ContentProvider")
 
+-- ── HTTP ──
 local function httpGet(url)
     local lastErr = "unknown"
-    do
-        local ok, r = pcall(game.HttpGet, game, url, true)
-        if ok and type(r) == "string" and #r > 500 then
-            if not r:find("<!DOCTYPE") and not r:find("<html") then
-                if CFG.Verbose then print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(#r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0)) end
-                return r
-            end
-            lastErr = "HTML response (404)"
-        else
-            lastErr = "too small or nil"
+    local ok, r = pcall(game.HttpGet, game, url, true)
+    if ok and type(r) == "string" and #r > 500 then
+        if not r:find("<!DOCTYPE") and not r:find("<html") then
+            if CFG.Verbose then print(("[HTTP] ✓ %d bytes · magic=%02X%02X%02X%02X"):format(#r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0)) end
+            return r
         end
+        lastErr = "HTML response (404)"
+    else
+        lastErr = "small/nil (" .. tostring(ok and #tostring(r) or r) .. ")"
     end
     if type(request) == "function" then
-        local ok, r = pcall(request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
+        local ok2, r2 = pcall(request, { Url = url, Method = "GET" })
+        if ok2 and r2 and r2.Body and #r2.Body > 500 then return r2.Body end
     end
     if type(http_request) == "function" then
-        local ok, r = pcall(http_request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
+        local ok3, r3 = pcall(http_request, { Url = url, Method = "GET" })
+        if ok3 and r3 and r3.Body and #r3.Body > 500 then return r3.Body end
     end
-    if type(syn) == "table" and type(syn.request) == "function" then
-        local ok, r = pcall(syn.request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
-    end
-    error("HTTP GET failed (" .. url .. ")\\n  " .. tostring(lastErr), 0)
+    error("[sprite] HTTP failed (" .. url .. "): " .. tostring(lastErr), 0)
 end
 
 local function djb2(s)
@@ -1865,10 +1580,9 @@ local function resolveAsset(url)
     if CFG.Refresh or not isfile(fname) then
         local body = httpGet(url)
         local ok, werr = pcall(writefile, fname, body)
-        if not ok then error("writefile: " .. tostring(werr), 0) end
-        if not isfile(fname) then error("writefile ok แต่ isfile=false", 0) end
+        if not ok then error("[sprite] writefile: " .. tostring(werr), 0) end
         local onDisk = #readfile(fname)
-        if onDisk ~= #body then error(("ไฟล์เขียนไม่ครบ disk=%d body=%d"):format(onDisk, #body), 0) end
+        if onDisk ~= #body then error(("[sprite] write mismatch disk=%d body=%d"):format(onDisk, #body), 0) end
         if CFG.Verbose then print(("[CACHE] wrote %s (%d bytes)"):format(fname, #body)) end
     elseif CFG.Verbose then
         print("[CACHE] hit: " .. fname)
@@ -1878,9 +1592,10 @@ local function resolveAsset(url)
         local ok, res = pcall(getcustomasset, fname)
         if ok and res then id = res; break end
         lerr = res
-        task.wait(0.2 * i)
+        task.wait(0.15 * i)
     end
-    if not id then error("getcustomasset: " .. tostring(lerr), 0) end
+    if not id then error("[sprite] getcustomasset: " .. tostring(lerr), 0) end
+    if CFG.Verbose then print("[CACHE] assetId = " .. tostring(id)) end
     return id
 end
 
@@ -1896,179 +1611,140 @@ end
 do
     local t0 = os.clock()
     while pending > 0 do
-        if os.clock() - t0 > CFG.Timeout then error("timeout " .. CFG.Timeout .. "s", 0) end
+        if os.clock() - t0 > CFG.Timeout then error("[sprite] timeout " .. CFG.Timeout .. "s", 0) end
         task.wait()
     end
 end
 for i = 1, N do
-    if not assetIds[i] then error(("หน้า %d ล้ม: %s"):format(i, tostring(errs[i])), 0) end
+    if not assetIds[i] then error(("[sprite] หน้า %d ล้ม: %s"):format(i, tostring(errs[i])), 0) end
 end
 
 local FW, FH = CFG.FrameSize.X, CFG.FrameSize.Y
 local TOTAL  = CFG.FrameCount
 local FPP    = CFG.FramesPerPage
 
-local target
+-- ── หา videoframe (target เดิม) ──
+local oldTarget
 do
     local parent = (typeof(script) == "Instance") and script.Parent or nil
-    local cand = nil
     local want = tostring(CFG.TargetName or "videoframe"):lower()
     if parent then
-        if parent.Name:lower() == want and (parent:IsA("ImageLabel") or parent:IsA("ImageButton")) then cand = parent end
-        if not cand then
+        if parent.Name:lower() == want and (parent:IsA("ImageLabel") or parent:IsA("ImageButton")) then
+            oldTarget = parent
+        elseif parent:IsA("ImageLabel") or parent:IsA("ImageButton") then
+            oldTarget = parent
+        else
             for _, d in ipairs(parent:GetDescendants()) do
-                if d.Name:lower() == want and (d:IsA("ImageLabel") or d:IsA("ImageButton")) then cand = d; break end
+                if d.Name:lower() == want and (d:IsA("ImageLabel") or d:IsA("ImageButton")) then
+                    oldTarget = d; break
+                end
             end
-        end
-        if not cand then
-            if parent:IsA("ImageLabel") or parent:IsA("ImageButton") then cand = parent
-            else
+            if not oldTarget then
                 for _, d in ipairs(parent:GetDescendants()) do
-                    if d:IsA("ImageLabel") or d:IsA("ImageButton") then cand = d; break end
+                    if d:IsA("ImageLabel") or d:IsA("ImageButton") then
+                        oldTarget = d; break
+                    end
                 end
             end
         end
     end
-    if not cand then error("ไม่เจอ ImageLabel/ImageButton ใต้ " .. (parent and parent:GetFullName() or "nil"), 0) end
-    target = cand
-    if target.Name ~= CFG.TargetName then pcall(function() target.Name = CFG.TargetName end) end
+    if not oldTarget then error("[sprite] ไม่เจอ ImageLabel/ImageButton", 0) end
 end
 
--- ═════════════════════════════════════════════════════════════════════
---  ★★★ CLEAN SLATE — ล้างค่าที่ทำให้ภาพดำ ★★★
--- ═════════════════════════════════════════════════════════════════════
-pcall(function() target.Image = "" end)
-pcall(function() target.ImageRectSize = Vector2.new(0, 0) end)
-pcall(function() target.ImageRectOffset = Vector2.new(0, 0) end)
-task.wait(0.05)
-
--- ★ ลบ UIAspectRatioConstraint เก่าของ gui2lua (สำคัญ!)
-for _, ch in ipairs(target:GetChildren()) do
-    if ch:IsA("UIAspectRatioConstraint") then
-        ch:Destroy()
-        if CFG.Verbose then print("[CLEAN] ลบ UIAspectRatioConstraint เก่า: " .. ch.Name) end
-    end
-    if ch.Name:sub(1, 12) == "__SpritePage" then
-        ch:Destroy()
-    end
-end
-
-pcall(function() target.SliceCenter = Rect.new(0, 0, 0, 0) end)
-pcall(function() target.SliceScale = 1 end)
+-- ★★★ สร้าง ImageLabel ใหม่เอี่ยม (กลยุทธ์ v6.0) ★★★
+local container = oldTarget.Parent
+local target = Instance.new("ImageLabel")
+target.Name = "videoframe"
+target.AnchorPoint = oldTarget.AnchorPoint
+target.Position = oldTarget.Position
+target.Size = oldTarget.Size
+target.ZIndex = oldTarget.ZIndex
+target.BackgroundTransparency = 1
+target.BorderSizePixel = 0
+target.ImageColor3 = Color3.fromRGB(255, 255, 255)
+target.ImageTransparency = 0
+target.Visible = true
+target.ScaleType = Enum.ScaleType.Stretch
 pcall(function() target.ResampleMode = Enum.ResamplerMode.Pixelated end)
-pcall(function() target.ScaleType = Enum.ScaleType.Stretch end)
+target.Parent = container
 
-pcall(function() target.BackgroundColor3 = Color3.fromRGB(35, 35, 50) end)
-pcall(function() target.BackgroundTransparency = 0.3 end)
-pcall(function() target.BorderSizePixel = 0 end)
-pcall(function() target.ImageColor3 = Color3.fromRGB(255, 255, 255) end)
-pcall(function() target.ImageTransparency = 0 end)
-pcall(function() target.Visible = true end)
-
-do
-    local absX = target.AbsoluteSize.X
-    local absY = target.AbsoluteSize.Y
-    if absX < 16 or absY < 16 then
-        target.Size = UDim2.fromOffset(math.max(FW * 4, 200), math.max(FH * 4, 200))
-        if CFG.Verbose then print(("[TARGET] size small (%dx%d) → %dx%d"):format(absX, absY, FW * 4, FH * 4)) end
-    end
-end
-
--- ★★★ SET IMAGE FIRST ★★★
-if N == 1 then
-    target.Image = assetIds[1]
-    if CFG.Verbose then print("[TARGET] set Image") end
+-- ★ ซ่อน/ลบ ตัวเก่า
+if CFG.KeepOldLabel then
+    oldTarget.Visible = false
+    oldTarget.ImageTransparency = 1
 else
-    target.Image = assetIds[1]
-    for i = 2, N do
-        local l = Instance.new("ImageLabel")
-        l.Name = "__SpritePage" .. i
-        l.Size = UDim2.fromScale(1, 1)
-        l.Position = UDim2.fromScale(0, 0)
-        l.BackgroundTransparency = 1
-        l.BorderSizePixel = 0
-        l.ZIndex = (target.ZIndex or 1) + i
-        l.ImageColor3 = Color3.fromRGB(255, 255, 255)
-        l.ImageTransparency = 1
-        l.Image = assetIds[i]
-        pcall(function() l.ResampleMode = Enum.ResamplerMode.Pixelated end)
-        pcall(function() l.ScaleType = Enum.ScaleType.Stretch end)
-        l.Parent = target
+    -- ลบเฉพาะ ImageLabel เดิม (เว้น child ที่ชื่อ __SpritePage)
+    for _, ch in ipairs(oldTarget:GetChildren()) do
+        if not ch.Name:sub(1,12) == "__SpritePage" then ch:Destroy() end
     end
+    oldTarget:Destroy()
 end
 
--- ★ รอ asset โหลดก่อน set RectSize (สำคัญมาก!)
-task.wait(0.5)
+-- รอ 1 frame ให้ GUI อัปเดต
+RunService.RenderStepped:Wait()
 
--- ★ ตอนนี้ค่อย set RectSize/Offset ★
-target.ImageRectSize = CFG.FrameSize
-target.ImageRectOffset = Vector2.new(0, 0)
+if CFG.Verbose then
+    print("[sprite] fresh target = " .. target:GetFullName())
+    print("[sprite] AbsSize=" .. target.AbsoluteSize.X .. "x" .. target.AbsoluteSize.Y)
+end
 
--- PreloadAsync
-pcall(function() ContentProv:PreloadAsync({target}) end)
-task.wait(0.2)
+-- ถ้า AbsSize ยัง 0 → บังคับขนาด pixel
+if target.AbsoluteSize.X < 8 or target.AbsoluteSize.Y < 8 then
+    target.Size = UDim2.fromOffset(FW * 4, FH * 4)
+    if CFG.Verbose then print("[sprite] forced Size=" .. tostring(target.Size)) end
+end
 
--- เพิ่ม AspectRatioConstraint ใหม่ (หลังลบของเก่า)
+-- UIAspectRatioConstraint ใหม่
 do
-    local ar = target:FindFirstChild("__SpriteAR")
-    if not ar then
-        ar = Instance.new("UIAspectRatioConstraint")
-        ar.Name = "__SpriteAR"
-        ar.Parent = target
-    end
+    local ar = Instance.new("UIAspectRatioConstraint")
+    ar.Name = "__SpriteAR"
     ar.AspectRatio = FW / FH
     ar.AspectType = Enum.AspectType.FitWithinMaxSize
     ar.DominantAxis = Enum.DominantAxis.Width
+    ar.Parent = target
 end
 
-local OFFS, PAGE = {}, {}
+-- ★★★ set Image ก่อน → รอ → set RectSize ★★★
+target.Image = assetIds[1]
+if CFG.Verbose then print("[sprite] set Image = " .. tostring(assetIds[1])) end
+task.wait(0.4)
+target.ImageRectSize = CFG.FrameSize
+target.ImageRectOffset = Vector2.new(0, 0)
+
+if CFG.Verbose then
+    print("[sprite] after set: ImageRectSize=" .. tostring(target.ImageRectSize) .. " Offset=" .. tostring(target.ImageRectOffset))
+    print("[sprite] Visible=" .. tostring(target.Visible) .. " ImgTrans=" .. target.ImageTransparency .. " BgTrans=" .. target.BackgroundTransparency)
+    print("[sprite] ImageColor3=" .. tostring(target.ImageColor3) .. " ScaleType=" .. tostring(target.ScaleType))
+end
+
+-- PreloadAsync
+pcall(function() ContentProv:PreloadAsync({target}) end)
+task.wait(0.15)
+
+-- ── frame table ──
+local OFFS = {}
 for i = 0, TOTAL - 1 do
     local li = i % FPP
     local col, row
     if CFG.Order == "col" then col = math.floor(li / CFG.Rows); row = li % CFG.Rows
     else col = li % CFG.Columns; row = math.floor(li / CFG.Columns) end
     OFFS[i + 1] = Vector2.new(math.floor(col * FW), math.floor(row * FH))
-    PAGE[i + 1] = math.floor(i / FPP) + 1
 end
 
-local layers = {}
-for _, ch in ipairs(target:GetChildren()) do
-    if ch.Name:sub(1, 12) == "__SpritePage" then
-        local num = tonumber(ch.Name:sub(13)) or 0
-        layers[num] = ch
-    end
-end
-
+-- ── engine ──
 local idx, acc = 0, 0
-local curPage = 0
 local conn, playing, dead = nil, false, false
 local finishedEvent = Instance.new("BindableEvent")
 
 local function apply()
-    if dead or not target then return end
-    local k = idx + 1
-    local off = OFFS[k]
-    if N == 1 then
-        target.ImageRectSize = CFG.FrameSize
-        target.ImageRectOffset = off
-    else
-        local pg = PAGE[k]
-        local layer = layers[pg] or target
-        layer.ImageRectSize = CFG.FrameSize
-        layer.ImageRectOffset = off
-        if pg ~= curPage then
-            if pg == 1 then
-                target.ImageTransparency = 0
-            else
-                target.ImageTransparency = 1
-            end
-            for i, l in pairs(layers) do
-                l.ImageTransparency = (i == pg) and 0 or 1
-            end
-            curPage = pg
-        end
-    end
+    if dead or not target or not target.Parent then return end
+    target.ImageRectSize = CFG.FrameSize
+    target.ImageRectOffset = OFFS[idx + 1]
+    target.ImageTransparency = 0
+    target.Visible = true
 end
+
+apply()
 
 local function stepOnce()
     idx = idx + 1
@@ -2106,8 +1782,6 @@ function API:Stop() self:Pause(); idx = 0; acc = 0; apply() end
 function API:SetFrame(i) idx = math.clamp(math.floor(i), 0, TOTAL - 1); apply() end
 function API:GetFrame() return idx end
 function API:GetFrameCount() return TOTAL end
-function API:GetPage() return PAGE[idx + 1] end
-function API:GetPageCount() return N end
 function API:SetFps(n) CFG.Fps = math.clamp(tonumber(n) or CFG.Fps, 1, 240) end
 function API:GetFps() return CFG.Fps end
 function API:SetLoop(b) CFG.Loop = not not b end
@@ -2115,74 +1789,87 @@ function API:IsPlaying() return playing end
 function API:Toggle() if playing then self:Pause() else self:Play() end end
 function API:Destroy()
     self:Pause(); dead = true
-    for _, l in ipairs(layers) do l:Destroy() end
     finishedEvent:Destroy()
+    if target then target:Destroy() end
     if _G.SpriteFromStudio == API then _G.SpriteFromStudio = nil end
-end
-
-apply()
-task.wait(0.05)
-
-if CFG.Verbose then
-    print(("[TARGET] %s (%s)"):format(target:GetFullName(), target.ClassName))
-    print(("[TARGET] Visible=%s ImgTrans=%.2f Size=%s Abs=%dx%d"):format(tostring(target.Visible), target.ImageTransparency, tostring(target.Size), target.AbsoluteSize.X, target.AbsoluteSize.Y))
-    print(("[TARGET] ImageRectSize=%s Offset=%s"):format(tostring(target.ImageRectSize), tostring(target.ImageRectOffset)))
-    print(("[FRAME ] %dx%d px · grid %dx%d · %d เฟรม · %d หน้า · %d fps"):format(FW, FH, CFG.Columns, CFG.Rows, TOTAL, N, CFG.Fps))
 end
 
 if CFG.AutoPlay then API:Play() end
 _G.SpriteFromStudio = API
-print(("[ForExecutorFromStudio] ✓ %s · %d เฟรม · %d หน้า · %d fps · %dx%d"):format(target:GetFullName(), TOTAL, N, CFG.Fps, FW, FH))
+print(("[sprite] ✓ READY · %s · %d เฟรม · %d fps · %dx%d"):format(target:GetFullName(), TOTAL, CFG.Fps, FW, FH))
 `;
 }
 
-/* FOR EXECUTOR v6.5 */
-function genForExecutor() {
+/* ★★★ FramesPlayer — 5-layer circular buffer ★★★ */
+function genFramesPlayer() {
   const c = getCfg();
-  return `--[[ ForExecutor.lua · v6.5 · Image first → wait → RectSize ]]
+  const ext = els.exportFormat.value === "jpg" ? "jpg" : "png";
+  const pad = state.count > 999 ? 4 : (state.count > 99 ? 3 : 2);
+  const fmtPadded = "%0" + pad + "d";
+  return `-- ═══════════════════════════════════════════════════════════════════════
+--  FramesPlayer.lua · v1.0 · 5-LAYER CIRCULAR BUFFER
+-- ═══════════════════════════════════════════════════════════════════════
+--  ★★★ กลไกการทำงาน ★★★
+--    • โหลดรูปแยกเฟรม (sprite_001.${ext} ... sprite_${String(state.count).padStart(pad,'0')}.${ext})
+--    • สร้าง ImageLabel 5 ชั้นซ้อนกัน (LAYERS = 5)
+--    • Preload 5 เฟรมแรก → เล่นจากชั้นหน้า → พอจบ → โหลดเฟรมที่ 6 เข้าชั้นหลังสุด
+--      → หมุนเป็นวงกลม (circular buffer)
+--    • ภาพที่ซ่อนจะถูก set ImageTransparency=1 → โหลดเบื้องหลัง → ไม่กระพริบ
+--    • ประหยัด asset cache เพราะมีแค่ 5 ภาพที่ active ในเวลาเดียวกัน
+-- ═══════════════════════════════════════════════════════════════════════
 
-local URL = "https://raw.githubusercontent.com/USER/REPO/main/sprite_sheet.png"
+local URL_FMT  = "https://raw.githubusercontent.com/USER/REPO/main/sprite_${fmtPadded}.${ext}"
+local EXT      = ".${ext}"
+local PAD      = ${pad}
+
 local CFG = {
-    Columns    = ${state.cols},
-    Rows       = ${state.rows},
     FrameCount = ${state.count},
     FrameSize  = Vector2.new(${c.fw}, ${c.fh}),
-    Order      = "${state.order}",
     Fps        = ${c.fps},
     Loop       = true,
     AutoPlay   = true,
-    Scale      = 4,
-    Storage    = "default",
-    Draggable  = true,
+    Folder     = "frames_cache",
+    Timeout    = 240,
     Verbose    = true,
+    Layers     = 5,     -- ★ จำนวนชั้นซ้อน (5-8 แนะนำ)
+    KeepOld    = false,
 }
 
-if CFG.FrameSize.X < 2 or CFG.FrameSize.Y < 2 then
-    error("[ForExecutor] FrameSize ไม่ถูกต้อง — export ใหม่", 0)
+do
+    local ok, why = pcall(function()
+        assert(CFG.FrameCount >= 1, "FrameCount ต้อง >= 1")
+        assert(CFG.FrameSize.X >= 2 and CFG.FrameSize.Y >= 2, "FrameSize เล็กเกินไป — โหลดไฟล์ใหม่")
+        assert(CFG.Layers >= 3 and CFG.Layers <= 10, "Layers ต้อง 3-10")
+        assert(URL_FMT:find("%%0") or URL_FMT:find("%%d"), "URL_FMT ต้องมี %0Nd")
+    end)
+    if not ok then error("[frames] CONFIG: " .. tostring(why), 0) end
 end
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local ContentProv = game:GetService("ContentProvider")
-local player = Players.LocalPlayer
+do
+    local exec = (type(writefile) == "function") and (type(getcustomasset) == "function") and (type(makefolder) == "function")
+    if not exec then
+        warn("[frames] Studio mode — ปกติ → gui2lua ไป Execute บน executor")
+        return
+    end
+end
 
-local function http(url)
-    do
-        local ok, r = pcall(game.HttpGet, game, url, true)
-        if ok and type(r) == "string" and #r > 500 and not r:find("<!DOCTYPE") then
-            if CFG.Verbose then print(("[HTTP] ✓ %d bytes · magic=%02X%02X%02X%02X"):format(#r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0)) end
-            return r
-        end
+local RunService  = game:GetService("RunService")
+local ContentProv = game:GetService("ContentProvider")
+
+local function httpGet(url)
+    local ok, r = pcall(game.HttpGet, game, url, true)
+    if ok and type(r) == "string" and #r > 100 then
+        if not r:find("<!DOCTYPE") and not r:find("<html") then return r end
     end
     if type(request) == "function" then
-        local ok, r = pcall(request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
+        local ok2, r2 = pcall(request, { Url = url, Method = "GET" })
+        if ok2 and r2 and r2.Body and #r2.Body > 100 then return r2.Body end
     end
     if type(http_request) == "function" then
-        local ok, r = pcall(http_request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
+        local ok3, r3 = pcall(http_request, { Url = url, Method = "GET" })
+        if ok3 and r3 and r3.Body and #r3.Body > 100 then return r3.Body end
     end
-    error("[ForExecutor] HTTP failed", 0)
+    error("[frames] HTTP failed: " .. url, 0)
 end
 
 local function djb2(s)
@@ -2191,155 +1878,260 @@ local function djb2(s)
     return string.format("%08x", h)
 end
 
-local function resolve(url)
-    if url:match("^rbxassetid://") or url:match("^rbxasset://") then return url end
+local function resolveFrame(n)
+    local url = URL_FMT:format(n)
     local root = "SpriteLib"
-    local dir = root .. "/" .. tostring(CFG.Storage or "default")
+    local dir  = root .. "/" .. tostring(CFG.Folder or "frames_cache")
     if not isfolder(root) then pcall(makefolder, root) end
-    if not isfolder(dir) then pcall(makefolder, dir) end
+    if not isfolder(dir)  then pcall(makefolder, dir)  end
     local fname = dir .. "/" .. djb2(url)
     if not isfile(fname) then
-        local body = http(url)
+        local body = httpGet(url)
         local ok, werr = pcall(writefile, fname, body)
-        if not ok then error("[ForExecutor] writefile: "..tostring(werr), 0) end
-        if CFG.Verbose then print(("[CACHE] wrote %s (%d bytes)"):format(fname, #body)) end
+        if not ok then error("[frames] writefile #" .. n .. ": " .. tostring(werr), 0) end
+        if CFG.Verbose then print(("[frames] downloaded #%d (%d bytes)"):format(n, #body)) end
     end
     local id, lerr
-    for i = 1, 5 do
+    for i = 1, 4 do
         local ok, res = pcall(getcustomasset, fname)
         if ok and res then id = res; break end
         lerr = res
-        task.wait(0.2 * i)
+        task.wait(0.15 * i)
     end
-    if not id then error("[ForExecutor] getcustomasset: "..tostring(lerr), 0) end
+    if not id then error("[frames] getcustomasset #" .. n .. ": " .. tostring(lerr), 0) end
     return id
 end
 
-local assetId = resolve(URL)
+local TOTAL = CFG.FrameCount
+local LAYERS = CFG.Layers
 
-local pg = player:WaitForChild("PlayerGui")
-if pg:FindFirstChild("SpriteExecGui") then pg.SpriteExecGui:Destroy() end
+-- ── โหลด asset ทั้งหมด (parallel) ──
+if CFG.Verbose then print(("[frames] downloading %d frames…"):format(TOTAL)) end
+local images, pend = {}, TOTAL
+for i = 1, TOTAL do
+    task.spawn(function()
+        local ok, id = pcall(resolveFrame, i)
+        if ok then images[i] = id end
+        pend = pend - 1
+    end)
+end
+do
+    local t0 = os.clock()
+    while pend > 0 do
+        if os.clock() - t0 > CFG.Timeout then error("[frames] timeout " .. CFG.Timeout .. "s", 0) end
+        task.wait(0.05)
+    end
+end
+local failCount = 0
+for i = 1, TOTAL do
+    if not images[i] then failCount = failCount + 1 end
+end
+if failCount > 0 then error(("[frames] %d/%d frames failed to load"):format(failCount, TOTAL), 0) end
+if CFG.Verbose then print(("[frames] ✓ all %d frames loaded"):format(TOTAL)) end
 
-local gui = Instance.new("ScreenGui")
-gui.Name = "SpriteExecGui"
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-gui.Parent = pg
+-- ── หา videoframe เดิม ──
+local oldTarget
+do
+    local parent = (typeof(script) == "Instance") and script.Parent or nil
+    if parent then
+        if parent:IsA("ImageLabel") or parent:IsA("ImageButton") then oldTarget = parent
+        else
+            for _, d in ipairs(parent:GetDescendants()) do
+                if d:IsA("ImageLabel") or d:IsA("ImageButton") then oldTarget = d; break end
+            end
+            if not oldTarget and parent.Name:lower() == "videoframe" then oldTarget = parent end
+        end
+    end
+    if not oldTarget then error("[frames] ไม่เจอ ImageLabel/ImageButton", 0) end
+end
 
-local FW, FH = CFG.FrameSize.X, CFG.FrameSize.Y
-local dispW = FW * CFG.Scale
-local dispH = FH * CFG.Scale
+-- ── container ──
+local container = oldTarget.Parent
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.fromOffset(dispW, dispH + 42)
-frame.Position = UDim2.new(0.5, -dispW/2, 0.5, -(dispH+42)/2)
-frame.BackgroundColor3 = Color3.fromRGB(15, 17, 22)
-frame.BorderSizePixel = 0
-frame.Active = CFG.Draggable
-frame.Draggable = CFG.Draggable
-frame.Parent = gui
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+-- ── สร้าง Frame คลุม (ทำหน้าที่เป็น container ของ layers) ──
+local holder = Instance.new("Frame")
+holder.Name = "videoframe_container"
+holder.AnchorPoint = oldTarget.AnchorPoint
+holder.Position = oldTarget.Position
+holder.Size = oldTarget.Size
+holder.ZIndex = oldTarget.ZIndex
+holder.BackgroundTransparency = 1
+holder.BorderSizePixel = 0
+holder.ClipsDescendants = false
+holder.Parent = container
 
-local image = Instance.new("ImageLabel")
-image.Name = "videoframe"
-image.Size = UDim2.fromOffset(dispW, dispH)
-image.Position = UDim2.fromOffset(0, 0)
-image.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-image.BackgroundTransparency = 0.3
-image.BorderSizePixel = 0
-image.Image = assetId
-image.ImageColor3 = Color3.fromRGB(255, 255, 255)
-image.ImageTransparency = 0
-image.Visible = true
-image.ScaleType = Enum.ScaleType.Stretch
-pcall(function() image.ResampleMode = Enum.ResamplerMode.Pixelated end)
-image.Parent = frame
+-- aspect
+do
+    local ar = Instance.new("UIAspectRatioConstraint")
+    ar.Name = "__FramesAR"
+    ar.AspectRatio = CFG.FrameSize.X / CFG.FrameSize.Y
+    ar.AspectType = Enum.AspectType.FitWithinMaxSize
+    ar.DominantAxis = Enum.DominantAxis.Width
+    ar.Parent = holder
+end
 
-task.wait(0.5)
+-- ── ลบ/ซ่อน target เก่า ──
+if not CFG.KeepOld then
+    oldTarget:Destroy()
+else
+    oldTarget.Visible = false
+end
 
-image.ImageRectSize = CFG.FrameSize
-image.ImageRectOffset = Vector2.new(0, 0)
+RunService.RenderStepped:Wait()
 
-pcall(function() ContentProv:PreloadAsync({image}) end)
-task.wait(0.1)
+-- ── สร้าง LAYERS ชั้นซ้อน ──
+local layers = {}
+for i = 1, LAYERS do
+    local l = Instance.new("ImageLabel")
+    l.Name = "__FrameLayer" .. i
+    l.Size = UDim2.fromScale(1, 1)
+    l.Position = UDim2.fromScale(0, 0)
+    l.BackgroundTransparency = 1
+    l.BorderSizePixel = 0
+    l.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    l.ImageTransparency = 1
+    l.Visible = true
+    l.ScaleType = Enum.ScaleType.Stretch
+    l.ZIndex = holder.ZIndex + i
+    pcall(function() l.ResampleMode = Enum.ResamplerMode.Pixelated end)
+    l.Parent = holder
+    layers[i] = l
+end
 
-local idx, acc, conn, playing, dead = 0, 0, nil, false, false
+-- ── circular buffer state ──
+-- HEAD = layer 1..LAYERS ที่แสดงอยู่ (ZIndex สูงสุด = front)
+-- FRAME = 0-based index ของเฟรมปัจจุบัน
+local HEAD = 1
+local FRAME = 0
 
-local function apply()
-    if dead then return end
-    local col, row
-    if CFG.Order == "col" then col = math.floor(idx / CFG.Rows); row = idx % CFG.Rows
-    else col = idx % CFG.Columns; row = math.floor(idx / CFG.Columns) end
-    image.ImageRectSize = CFG.FrameSize
-    image.ImageRectOffset = Vector2.new(col * FW, row * FH)
+-- ★ helper: layer[k] ควรถือเฟรมที่ offset (k - HEAD) mod LAYERS → 0-based index
+local function slotFrameIdx(k)
+    local offset = (k - HEAD) % LAYERS
+    return (FRAME + offset) % TOTAL
+end
+
+-- ── init: โหลด LAYERS เฟรมแรก ──
+for k = 1, LAYERS do
+    local fidx = slotFrameIdx(k)
+    layers[k].Image = images[fidx + 1]   -- images เป็น 1-based
+    layers[k].ImageTransparency = (k == HEAD) and 0 or 1
+    layers[k].ZIndex = holder.ZIndex + LAYERS + (k == HEAD and LAYERS or 0)
+end
+
+-- ทำให้ HEAD อยู่บนสุด
+layers[HEAD].ZIndex = holder.ZIndex + LAYERS + LAYERS
+
+-- Preload
+pcall(function()
+    local list = {}
+    for k = 1, LAYERS do table.insert(list, layers[k]) end
+    ContentProv:PreloadAsync(list)
+end)
+task.wait(0.2)
+
+if CFG.Verbose then
+    print(("[frames] holder AbsSize=%dx%d"):format(holder.AbsoluteSize.X, holder.AbsoluteSize.Y))
+    print(("[frames] LAYERS=%d, HEAD=%d, FRAME=%d"):format(LAYERS, HEAD, FRAME))
+end
+
+-- ── advance ──
+local function advance()
+    local oldHead = HEAD
+    FRAME = (FRAME + 1) % TOTAL
+    HEAD = (HEAD % LAYERS) + 1
+
+    -- ★ layer เก่า (oldHead) ตอนนี้อยู่ offset LAYERS-1 → ต้องโหลดเฟรมใหม่
+    local wantFidx = slotFrameIdx(oldHead)
+    layers[oldHead].Image = images[wantFidx + 1]
+    layers[oldHead].ImageTransparency = 1
+    layers[oldHead].ZIndex = holder.ZIndex + LAYERS   -- ไปหลังสุด
+
+    -- ★ layer ใหม่ (HEAD) ขึ้นหน้าสุด
+    layers[HEAD].ImageTransparency = 0
+    layers[HEAD].ZIndex = holder.ZIndex + LAYERS + LAYERS
+end
+
+-- ── engine ──
+local idx, acc = 0, 0
+local conn, playing, dead = nil, false, false
+local finishedEvent = Instance.new("BindableEvent")
+
+local function step()
+    advance()
+    idx = idx + 1
+    if idx >= TOTAL then
+        if CFG.Loop then
+            -- reset buffer (ทุก layer โหลดใหม่จากเฟรม 0)
+            idx = 0; FRAME = 0; HEAD = 1
+            for k = 1, LAYERS do
+                local fidx = slotFrameIdx(k)
+                layers[k].Image = images[fidx + 1]
+                layers[k].ImageTransparency = (k == HEAD) and 0 or 1
+                layers[k].ZIndex = holder.ZIndex + LAYERS + (k == HEAD and LAYERS or 0)
+            end
+        else
+            idx = TOTAL - 1
+            finishedEvent:Fire()
+            return false
+        end
+    end
+    return true
 end
 
 local API = {}
+API.OnFinish = finishedEvent.Event
 function API:Play()
     if playing or dead then return end
     playing = true; acc = 0
     conn = RunService.RenderStepped:Connect(function(dt)
         if dead then return end
+        dt = math.min(dt, 0.25)
         acc = acc + dt * CFG.Fps
         local g = 0
-        while acc >= 1 and g < 240 do
+        while acc >= 1 and g < 512 do
             g = g + 1; acc = acc - 1
-            idx = idx + 1
-            if idx >= CFG.FrameCount then
-                if CFG.Loop then idx = 0 else idx = CFG.FrameCount - 1; self:Pause() end
-            end
+            if not step() then break end
         end
-        apply()
     end)
 end
 function API:Pause() playing = false; if conn then conn:Disconnect(); conn = nil end end
-function API:Stop() self:Pause(); idx = 0; apply() end
-function API:SetFrame(i) idx = math.clamp(i, 0, CFG.FrameCount - 1); apply() end
-function API:SetFps(n) CFG.Fps = math.max(1, n) end
+function API:Stop()
+    self:Pause()
+    idx = 0; acc = 0; FRAME = 0; HEAD = 1
+    for k = 1, LAYERS do
+        local fidx = slotFrameIdx(k)
+        layers[k].Image = images[fidx + 1]
+        layers[k].ImageTransparency = (k == HEAD) and 0 or 1
+        layers[k].ZIndex = holder.ZIndex + LAYERS + (k == HEAD and LAYERS or 0)
+    end
+end
+function API:SetFrame(i)
+    idx = math.clamp(math.floor(i), 0, TOTAL - 1)
+    FRAME = idx
+    for k = 1, LAYERS do
+        local fidx = slotFrameIdx(k)
+        layers[k].Image = images[fidx + 1]
+        layers[k].ImageTransparency = (k == HEAD) and 0 or 1
+    end
+end
 function API:GetFrame() return idx end
+function API:GetFrameCount() return TOTAL end
+function API:SetFps(n) CFG.Fps = math.clamp(tonumber(n) or CFG.Fps, 1, 240) end
+function API:GetFps() return CFG.Fps end
+function API:SetLoop(b) CFG.Loop = not not b end
 function API:IsPlaying() return playing end
-function API:Destroy() self:Pause(); dead = true; if gui then gui:Destroy() end end
-
-apply()
-
-local ctrl = Instance.new("Frame")
-ctrl.Size = UDim2.new(1, 0, 0, 32)
-ctrl.Position = UDim2.new(0, 0, 1, -36)
-ctrl.BackgroundTransparency = 1
-ctrl.Parent = frame
-
-local lay = Instance.new("UIListLayout")
-lay.FillDirection = Enum.FillDirection.Horizontal
-lay.HorizontalAlignment = Enum.HorizontalAlignment.Center
-lay.Padding = UDim.new(0, 6)
-lay.Parent = ctrl
-
-local function mkBtn(txt, fn)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.fromOffset(70, 28)
-    b.BackgroundColor3 = Color3.fromRGB(31, 111, 235)
-    b.TextColor3 = Color3.fromRGB(255, 255, 255)
-    b.TextSize = 13
-    b.Font = Enum.Font.GothamMedium
-    b.Text = txt
-    b.Parent = ctrl
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
-    b.MouseButton1Click:Connect(fn)
-    return b
+function API:Toggle() if playing then self:Pause() else self:Play() end end
+function API:Destroy()
+    self:Pause(); dead = true
+    finishedEvent:Destroy()
+    if holder then holder:Destroy() end
+    if _G.SpriteFromStudio == API then _G.SpriteFromStudio = nil end
 end
 
-local playBtn = mkBtn("Pause", function()
-    if playing then API:Pause(); playBtn.Text = "Play"
-    else API:Play(); playBtn.Text = "Pause" end
-end)
-mkBtn("Restart", function() API:Stop(); API:Play(); playBtn.Text = "Pause" end)
-mkBtn("Close", function() API:Destroy() end)
-
 if CFG.AutoPlay then API:Play() end
-_G.SpriteExec = API
-_G.SpriteExecGui = gui
-print(("[ForExecutor] ✓ %d เฟรม · %d fps · %dx%d → %dx%d"):format(CFG.FrameCount, CFG.Fps, FW, FH, dispW, dispH))
+_G.SpriteFromStudio = API
+_G.FramesPlayer = API
+print(("[frames] ✓ READY · %d เฟรม · %d fps · %dx%d · LAYERS=%d"):format(TOTAL, CFG.Fps, CFG.FrameSize.X, CFG.FrameSize.Y, LAYERS))
 `;
 }
 
@@ -2359,119 +2151,50 @@ return {
 }`;
 }
 
-function genPlayerLua() {
-  const c = getCfg();
-  return `-- VideoPlayer.lua
-local RunService = game:GetService("RunService")
-local VideoPlayer = {}; VideoPlayer.__index = VideoPlayer
-
-function VideoPlayer.new(config)
-\tlocal self = setmetatable({}, VideoPlayer)
-\tself.Target = config.Target
-\tself.SheetId = config.SheetId or "rbxassetid://0"
-\tself.FrameSize = config.FrameSize or Vector2.new(${c.fw}, ${c.fh})
-\tself.Columns = config.Columns or ${state.cols}
-\tself.Rows = config.Rows or ${state.rows}
-\tself.FrameCount = config.FrameCount or ${state.count}
-\tself.Order = config.Order or "${state.order}"
-\tself.Fps = config.Fps or ${c.fps}
-\tself.Loop = config.Loop ~= false
-\tself.AutoPlay = config.AutoPlay ~= false
-\tself.FrameIndex = 0; self.Accum = 0; self.Playing = false
-\tself.Connection = nil
-\tself:_setup()
-\tif self.AutoPlay then self:Play() end
-\treturn self
-end
-
-function VideoPlayer:_setup()
-\tlocal t = self.Target
-\tt.Visible = true
-\tt.ImageTransparency = 0
-\tt.BackgroundTransparency = 1
-\tt.Image = self.SheetId
-\ttask.wait(0.3)
-\tt.ImageRectSize = self.FrameSize
-\tt.ImageRectOffset = Vector2.new(0, 0)
-\tpcall(function() t.ResampleMode = Enum.ResamplerMode.Pixelated end)
-\tpcall(function() t.ScaleType = Enum.ScaleType.Stretch end)
-\tself:_applyFrame()
-end
-
-function VideoPlayer:_applyFrame()
-\tlocal i = self.FrameIndex
-\tlocal col, row
-\tif self.Order == "col" then col = math.floor(i / self.Rows); row = i % self.Rows
-\telse col = i % self.Columns; row = math.floor(i / self.Columns) end
-\tself.Target.ImageRectSize = self.FrameSize
-\tself.Target.ImageRectOffset = Vector2.new(col * self.FrameSize.X, row * self.FrameSize.Y)
-end
-
-function VideoPlayer:Play()
-\tif self.Playing then return end
-\tself.Playing = true; self.Accum = 0
-\tself.Connection = RunService.RenderStepped:Connect(function(dt)
-\t\tself.Accum = self.Accum + dt * self.Fps
-\t\twhile self.Accum >= 1 do
-\t\t\tself.Accum = self.Accum - 1; self:_step()
-\t\tend
-\tend)
-end
-function VideoPlayer:Pause()
-\tself.Playing = false
-\tif self.Connection then self.Connection:Disconnect(); self.Connection = nil end
-end
-function VideoPlayer:Stop() self:Pause(); self.FrameIndex = 0; self:_applyFrame() end
-function VideoPlayer:SetFrame(i) self.FrameIndex = math.clamp(i, 0, self.FrameCount - 1); self:_applyFrame() end
-function VideoPlayer:SetFps(n) self.Fps = math.max(1, n) end
-function VideoPlayer:_step()
-\tself.FrameIndex = self.FrameIndex + 1
-\tif self.FrameIndex >= self.FrameCount then
-\t\tif self.Loop then self.FrameIndex = 0
-\t\telse self.FrameIndex = self.FrameCount - 1; self:Pause() end
-\tend
-\tself:_applyFrame()
-end
-function VideoPlayer:Destroy() self:Pause() end
-return VideoPlayer`;
-}
-
 function genReadme(ext, fmt) {
   const c = getCfg();
   const L = c.L;
+  const pad = state.count > 999 ? 4 : (state.count > 99 ? 3 : 2);
   const paged = L.pages > 1;
-  const sheetName = paged ? "sprite_sheet_1." + ext + " … sprite_sheet_" + L.pages + "." + ext : "sprite_sheet." + ext;
-  return `Sprite Sheet Export — ${state.sourceType.toUpperCase()}
+  return `Sprite Export — ${state.sourceType.toUpperCase()}
 ====================================================
+ขนาด 1 เฟรม: ${c.fw} × ${c.fh} px
+จำนวนเฟรม: ${state.count}
+FPS: ${c.fps}
+Flip: ${state.flipMode}
+รูปแบบ: ${fmt}
 
-═══ ข้อมูล Sheet ═══
-  จำนวนหน้า: ${L.pages}
-  ขนาดต่อหน้า: ${c.sheetW} × ${c.sheetH} px
-  ขนาด 1 เฟรม: ${c.fw} × ${c.fh} px
-  ตารางต่อหน้า: ${L.pc} × ${L.pr} (${L.fpp} เฟรม/หน้า)
-  จำนวนเฟรมรวม: ${state.count}
-  ลำดับ: ${state.order}
-  FPS: ${c.fps}
-  รูปแบบ: ${fmt}
+═══ 2 โหมดการส่งออก ═══
 
-═══ ★★★ v5.0 แก้ทำไมภาพดำ ★★★ ═══
-  1. ลบ UIAspectRatioConstraint เก่าของ gui2lua (ทับของเรา)
-  2. ลำดับ: set Image → wait 0.5s → set ImageRectSize/Offset
-     (ถ้าตั้ง RectSize ก่อน Image → reset 0,0 → ดำ)
-  3. BackgroundColor3 + BgTransparency=0.3 (เห็นสี ไม่ดำ)
-  4. SliceCenter/SliceScale = default
-  5. PreloadAsync รอ asset
-  6. Visible=true, ImageTransparency=0
+【โหมด 1】Sprite Sheet (ภาพเดียว)
+  - ไฟล์: sprite_sheet.${ext}${paged ? " + sprite_sheet_2.${ext}…" : ""}
+  - Lua: ForExecutorFromStudio.lua (v6.0)
+  - ข้อดี: ไฟล์เดียว โหลดเร็ว
+  - ข้อเสีย: sheet ใหญ่ อาจเกินขีดจำกัด executor
+
+【โหมด 2】Individual Frames (แยกเฟรม)
+  - ไฟล์: sprite_${"1".padStart(pad,'0')}.${ext} … sprite_${String(state.count).padStart(pad,'0')}.${ext} (${state.count} ไฟล์)
+  - Lua: FramesPlayer.lua (5-layer circular buffer)
+  - ข้อดี: รูปเล็ก โหลดทีละน้อย ประหยัด asset memory
+  - ข้อเสีย: ต้องโหลดหลายไฟล์
+
+═══ FramesPlayer.lua — กลไก 5-Layer ═══
+  1. โหลดรูปทั้ง ${state.count} ไฟล์ (parallel)
+  2. สร้าง ImageLabel 5 ชั้นซ้อน (LAYERS = 5)
+  3. Layer หน้าแสดงเฟรมปัจจุบัน, Layer หลังๆ โหลดล่วงหน้า
+  4. พอเล่นจบ Layer หลังสุดก็โหลดเฟรมถัดไป แล้วขึ้นมาเป็นหน้าสุด
+  5. หมุนวนเป็นวงกลม → ไม่มีช่วง "โหลดภาพ" ให้เห็น
 
 ═══ URL ═══
-  ✓ https://raw.githubusercontent.com/USER/REPO/main/pf.png
-  ✗ https://githubusercontent.com/...
+  ✓ https://raw.githubusercontent.com/USER/REPO/main/sprite_001.${ext}
+  ✗ https://githubusercontent.com/...  (404)
 
 ═══ API ═══
   _G.SpriteFromStudio:Pause() / :Play() / :SetFrame(n) / :SetFps(n)
 `;
 }
 
+/* EXPORT */
 function buildExportPage(p, L) {
   const frames = getFrames();
   const cv = document.createElement("canvas");
@@ -2485,20 +2208,16 @@ function buildExportPage(p, L) {
 }
 function enableExport() {
   els.btnSheet.disabled = false;
-  els.btnCopyAll.disabled = false;
   updateFilePickerSizes();
 }
-function disableExport() {
-  els.btnSheet.disabled = true;
-  els.btnCopyAll.disabled = true;
-}
+function disableExport() { els.btnSheet.disabled = true; }
 async function exportZip() {
   if (state.sourceType === "none") { toast("❌ โหลดไฟล์ก่อน", "err"); return; }
   els.btnSheet.disabled = true;
-  setStatus("แพ็ค sprite sheet…", "loading");
+  setStatus("แพ็ค…", "loading");
   try {
     const L = getLayout();
-    if (L.fw < 2 || L.fh < 2) throw new Error("FrameSize ไม่ถูกต้อง — โหลดไฟล์ใหม่");
+    if (L.fw < 2 || L.fh < 2) throw new Error("FrameSize ไม่ถูกต้อง");
     const paged = L.pages > 1;
     const fmt = els.exportFormat.value;
     const quality = Math.max(0.6, Math.min(1, (+els.jpgQuality.value || 98) / 100));
@@ -2506,34 +2225,53 @@ async function exportZip() {
     const ext = fmt === "jpg" ? "jpg" : "png";
     const enc = new TextEncoder();
     const files = [];
+    const frames = getFrames();
+    const pad = state.count > 999 ? 4 : (state.count > 99 ? 3 : 2);
 
-    if (state.selected.sheet) {
-      for (let p = 0; p < L.pages; p++) {
-        setStatus("แพ็คหน้า " + (p + 1) + "/" + L.pages + "…", "loading");
-        await new Promise(r => setTimeout(r, 0));
-        const sheet = buildExportPage(p, L);
-        const blob = await new Promise(res => sheet.toBlob(res, mime, quality));
-        sheet.width = 0; sheet.height = 0;
-        if (!blob) throw new Error("สร้างรูปหน้า " + (p + 1) + " ไม่สำเร็จ");
-        const data = new Uint8Array(await blob.arrayBuffer());
-        files.push({ name: paged ? "sprite_sheet_" + (p + 1) + "." + ext : "sprite_sheet." + ext, data });
+    // ★ Sheet mode
+    if (state.exportMode === "sheet") {
+      if (state.selected.sheet) {
+        for (let p = 0; p < L.pages; p++) {
+          setStatus("แพ็คหน้า " + (p + 1) + "/" + L.pages + "…", "loading");
+          await new Promise(r => setTimeout(r, 0));
+          const sheet = buildExportPage(p, L);
+          const blob = await new Promise(res => sheet.toBlob(res, mime, quality));
+          sheet.width = 0; sheet.height = 0;
+          if (!blob) throw new Error("สร้างหน้า " + (p + 1) + " ไม่สำเร็จ");
+          const data = new Uint8Array(await blob.arrayBuffer());
+          files.push({ name: paged ? "sprite_sheet_" + (p + 1) + "." + ext : "sprite_sheet." + ext, data });
+        }
       }
+      if (state.selected.fromstudio) files.push({ name: "ForExecutorFromStudio.lua", data: enc.encode(genForExecutorFromStudio()) });
+      if (state.selected.frameslua)  files.push({ name: "Frames.lua", data: enc.encode(genFramesLua()) });
     }
-    if (!paged) {
-      if (state.selected.lib)      files.push({ name: "SpriteLib.lua",   data: enc.encode(genSpriteLib()) });
-      if (state.selected.executor) files.push({ name: "ForExecutor.lua", data: enc.encode(genForExecutor()) });
-      if (state.selected.frames)   files.push({ name: "Frames.lua",      data: enc.encode(genFramesLua()) });
-      if (state.selected.player)   files.push({ name: "VideoPlayer.lua", data: enc.encode(genPlayerLua()) });
+
+    // ★ Individual frames mode
+    if (state.exportMode === "frames") {
+      if (state.selected.frames) {
+        for (let i = 0; i < frames.length; i++) {
+          if (i % 4 === 0) {
+            setStatus("แพ็คเฟรม " + (i + 1) + "/" + frames.length + "…", "loading");
+            await new Promise(r => setTimeout(r, 0));
+          }
+          const cv = frames[i];
+          const blob = await new Promise(res => cv.toBlob(res, mime, quality));
+          if (!blob) throw new Error("สร้างเฟรม " + (i + 1) + " ไม่สำเร็จ");
+          const data = new Uint8Array(await blob.arrayBuffer());
+          files.push({ name: "sprite_" + pad3(i + 1) + "." + ext, data });
+        }
+      }
+      if (state.selected.framesplayer) files.push({ name: "FramesPlayer.lua", data: enc.encode(genFramesPlayer()) });
     }
-    if (state.selected.fromstudio) files.push({ name: "ForExecutorFromStudio.lua", data: enc.encode(genForExecutorFromStudio()) });
-    if (state.selected.readme)     files.push({ name: "README.txt", data: enc.encode(genReadme(ext, fmt.toUpperCase())) });
+
+    if (state.selected.readme) files.push({ name: "README.txt", data: enc.encode(genReadme(ext, fmt.toUpperCase())) });
 
     download(buildZip(files), "roblox_sprite.zip");
-    setStatus("เสร็จ — " + files.length + " ไฟล์ · " + L.pageW + "×" + L.pageH + "px · เฟรมละ " + L.fw + "×" + L.fh, "ok");
+    setStatus("เสร็จ — " + files.length + " ไฟล์ · เฟรมละ " + L.fw + "×" + L.fh, "ok");
     toast("✓ ดาวน์โหลด " + files.length + " ไฟล์", "ok", 2500);
   } catch (err) {
     console.error(err);
-    setStatus("ส่งออกล้มเหลว: " + err.message, "err");
+    setStatus("ล้มเหลว: " + err.message, "err");
     toast("❌ " + err.message, "err", 4000);
   } finally {
     els.btnSheet.disabled = false;
@@ -2547,10 +2285,6 @@ function fallbackCopy(t) {
 async function copyText(text, label) {
   try { await navigator.clipboard.writeText(text); toast("✓ คัดลอก " + label, "ok"); }
   catch { fallbackCopy(text); toast("✓ คัดลอก " + label, "ok"); }
-}
-function pagedBlocked() {
-  if (getLayout().pages > 1) { toast("ไฟล์นี้ยังไม่รองรับหลายหน้า — ใช้ ForExecutorFromStudio.lua", "err", 3500); return true; }
-  return false;
 }
 
 document.querySelectorAll(".file-item").forEach(item => {
@@ -2570,16 +2304,11 @@ document.querySelectorAll(".fi-copy").forEach(btn => {
     e.stopPropagation();
     if (state.sourceType === "none") { toast("❌ โหลดไฟล์ก่อน", "err", 3000); return; }
     const k = btn.dataset.copy;
-    if (k !== "fromstudio" && pagedBlocked()) return;
     try {
-      if (k === "lib")        copyText(genSpriteLib(), "SpriteLib.lua");
-      if (k === "fromstudio") copyText(genForExecutorFromStudio(), "ForExecutorFromStudio.lua");
-      if (k === "executor")   copyText(genForExecutor(), "ForExecutor.lua");
-      if (k === "frames")     copyText(genFramesLua(), "Frames.lua");
-      if (k === "player")     copyText(genPlayerLua(), "VideoPlayer.lua");
-    } catch (err) {
-      toast("❌ " + err.message, "err", 4000);
-    }
+      if (k === "fromstudio")   copyText(genForExecutorFromStudio(), "ForExecutorFromStudio.lua");
+      if (k === "framesplayer") copyText(genFramesPlayer(), "FramesPlayer.lua");
+      if (k === "frameslua")    copyText(genFramesLua(), "Frames.lua");
+    } catch (err) { toast("❌ " + err.message, "err", 4000); }
   });
 });
 
@@ -2622,6 +2351,43 @@ els.order.addEventListener("change", () => { state.order = els.order.value; inva
 els.maxPage.addEventListener("change", () => { recalc(); scheduleFull(); });
 els.fps.addEventListener("input", () => { state.fps = Math.max(1, Math.min(120, +els.fps.value || 24)); updateMeta(); });
 els.zoom.addEventListener("change", () => { state.zoom = els.zoom.value; drawCurrentFrame(); });
+
+/* ★ เปลี่ยนโหมด + flip → invalidate */
+els.exportMode.addEventListener("change", () => {
+  state.exportMode = els.exportMode.value;
+  updateModeHint();
+  updateFilePickerVisibility();
+  updateFilePickerSizes();
+});
+els.flipMode.addEventListener("change", () => {
+  state.flipMode = els.flipMode.value;
+  invalidateCache();
+  fullRedraw();
+  updateFilePickerSizes();
+});
+
+function updateModeHint() {
+  if (state.exportMode === "sheet") {
+    els.modeHint.innerHTML = '<b>Sprite Sheet</b>: ภาพรวมทุกเฟรมในไฟล์เดียว → ใช้ <code>ForExecutorFromStudio.lua</code>';
+  } else {
+    els.modeHint.innerHTML = '<b>Individual Frames</b>: แยกเป็น sprite_001.png…sprite_NNN.png → ใช้ <code>FramesPlayer.lua</code> (5-layer buffer)';
+  }
+}
+function updateFilePickerVisibility() {
+  const isFrames = state.exportMode === "frames";
+  document.querySelectorAll(".file-item").forEach(item => {
+    const k = item.dataset.file;
+    if (k === "sheet" || k === "fromstudio" || k === "frameslua") {
+      item.style.opacity = isFrames ? "0.35" : "1";
+      item.style.pointerEvents = isFrames ? "none" : "";
+    }
+    if (k === "frames" || k === "framesplayer") {
+      item.style.opacity = isFrames ? "1" : "0.35";
+      item.style.pointerEvents = isFrames ? "" : "none";
+    }
+  });
+}
+
 els.filmstrip.addEventListener("click", e => {
   const cv = e.target.closest && e.target.closest("canvas");
   if (cv && cv.dataset && cv.dataset.idx !== undefined) setIdx(+cv.dataset.idx);
@@ -2639,13 +2405,7 @@ els.btnNext.addEventListener("click", () => setIdx((state.idx + 1) % state.count
 els.btnPrev.addEventListener("click", () => setIdx((state.idx - 1 + state.count) % state.count));
 els.btnFirst.addEventListener("click", () => { state.acc = 0; setIdx(0); });
 els.btnSheet.addEventListener("click", exportZip);
-els.btnCopyAll.addEventListener("click", () => {
-  if (state.sourceType === "none") { toast("❌ โหลดไฟล์ก่อน", "err", 3000); return; }
-  if (!pagedBlocked()) {
-    try { copyText(genSpriteLib(), "SpriteLib.lua"); }
-    catch (err) { toast("❌ " + err.message, "err", 4000); }
-  }
-});
+
 document.addEventListener("keydown", e => {
   const tag = e.target.tagName;
   if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
@@ -2664,6 +2424,8 @@ window.addEventListener("resize", () => {
 
 els.btnPlay.textContent = "⏸ Pause";
 els.jpgQuality.disabled = true;
+updateModeHint();
+updateFilePickerVisibility();
 disableExport();
 </script>
 </body>
