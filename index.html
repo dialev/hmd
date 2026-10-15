@@ -374,7 +374,7 @@
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">ForExecutorFromStudio.lua</div>
-            <div class="fi-desc">★ v3.4 · วาง LocalScript ใน Studio · gui2lua → executor · รองรับหลายหน้า</div>
+            <div class="fi-desc">★ v3.6 · cache ไม่มีนามสกุล · target = videoframe · HttpGet first</div>
           </div>
           <span class="fi-size">~8 KB</span>
           <button class="fi-copy" data-copy="fromstudio">📋</button>
@@ -384,7 +384,7 @@
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">ForExecutor.lua</div>
-            <div class="fi-desc">★ v3 · loadstring ใน Delta/Synapse → GUI + ดาวน์โหลด + เล่นทันที</div>
+            <div class="fi-desc">★ v4 · loadstring · cache ไม่มีนามสกุล · HttpGet first</div>
           </div>
           <span class="fi-size">~5 KB</span>
           <button class="fi-copy" data-copy="executor">📋</button>
@@ -494,7 +494,6 @@
 <script>
 "use strict";
 
-/* STATE */
 const state = {
   sourceType: "none",
   img: null, animFrames: null, animDelays: null,
@@ -524,7 +523,6 @@ const els = {};
  "status","toast","fiSheetName","fiSheetSize","maxPage","pageTabs","pagedNote"
 ].forEach(id => els[id] = document.getElementById(id));
 
-/* TOAST / STATUS */
 let _toastTimer = null;
 function toast(msg, kind = "info", ms = 2200) {
   els.toast.textContent = msg;
@@ -537,7 +535,6 @@ function setStatus(msg, kind) {
   els.status.className = "status" + (kind ? " " + kind : "");
 }
 
-/* MAGIC BYTES */
 const SIGNATURES = [
   { kind: "gif", test: b => b[0]===0x47 && b[1]===0x49 && b[2]===0x46 && b[3]===0x38 },
   { kind: "image", test: b => b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47 },
@@ -569,7 +566,6 @@ async function detectFileType(file) {
   return null;
 }
 
-/* HELPERS */
 function formatBytes(n) {
   if (n < 1024) return n + " B";
   if (n < 1048576) return (n/1024).toFixed(1) + " KB";
@@ -652,7 +648,6 @@ function download(blob, filename) {
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
 }
 
-/* FRAMES */
 let _frames = null, _framesKey = "";
 function getFrames() {
   const key = [state.sourceType, state.cols, state.rows, state.count, state.start, state.order,
@@ -691,7 +686,6 @@ function invalidateCache() {
   _frameHashes = null; _frameHashesKey = "";
 }
 
-/* PENDING LIST */
 function renderPendingList() {
   const list = els.pendingList;
   if (!state.pendingFiles.length) { list.innerHTML = ""; return; }
@@ -717,7 +711,6 @@ function renderPendingList() {
   list.appendChild(frag);
 }
 
-/* HANDLE FILES */
 async function handleFiles(fileList) {
   const files = Array.from(fileList);
   if (!files.length) return;
@@ -749,7 +742,6 @@ async function loadPendingIndex(i) {
   else await loadImageFile(item.file);
 }
 
-/* VIDEO */
 async function loadVideoFile(file) {
   setStatus("เตรียมวิดีโอ…", "loading");
   state.sourceType = "none";
@@ -921,7 +913,6 @@ function applyVideo(fileName, frames, srcFps, W, H) {
   fullRedraw();
 }
 
-/* GIF */
 async function loadGifFile(file) {
   setStatus("ถอดรหัส GIF…", "loading");
   try {
@@ -967,7 +958,6 @@ function applyGif(file, gif) {
   fullRedraw();
 }
 
-/* IMAGE */
 async function loadImageFile(file) {
   setStatus("โหลดรูป…", "loading");
   return new Promise(resolve => {
@@ -1008,7 +998,6 @@ function applySheet(file, img) {
   fullRedraw();
 }
 
-/* AUTO GRID */
 function computeAutoGrid(n) {
   let best = { cols: n, rows: 1, score: Infinity };
   for (let c = 1; c <= n; c++) {
@@ -1020,7 +1009,6 @@ function computeAutoGrid(n) {
   return best;
 }
 
-/* RECALC / META */
 function recalc() {
   if (state.sourceType === "sheet") {
     state.count = state.cols * state.rows;
@@ -1101,7 +1089,6 @@ function updateFilePickerSizes() {
   els.fiSheetSize.textContent = "~" + formatBytes(approx);
 }
 
-/* DRAW */
 function schedule(cb) {
   if ("requestIdleCallback" in window) requestIdleCallback(cb, { timeout: 250 });
   else setTimeout(cb, 0);
@@ -1138,7 +1125,6 @@ function drawCurrentFrame() {
   els.curFrameZoom.textContent = "zoom " + (Number.isInteger(z) ? z + "×" : z.toFixed(2) + "×");
 }
 
-/* sheet preview */
 let _prev = null;
 function buildPageTabs(L, page) {
   const box = els.pageTabs;
@@ -1230,7 +1216,6 @@ function updateHighlightOnly() {
   hl.style.transform = "translate(" + (c * L.fw * z) + "px," + (r * L.fh * z) + "px)";
 }
 
-/* FILMSTRIP */
 let _stripToken = 0, _thumbEls = [], _thumbStep = 1, _activeThumb = null;
 function buildFilmstrip() {
   const strip = els.filmstrip;
@@ -1348,7 +1333,6 @@ function setIdx(i, keepPlaying = false) {
   onFrameChanged();
 }
 
-/* ANIMATION LOOP */
 let lastTime = performance.now();
 let _lastAnimatedIdx = -1;
 function tick(now) {
@@ -1373,7 +1357,6 @@ function tick(now) {
 }
 requestAnimationFrame(tick);
 
-/* GIF DECODER */
 function lzwDecode(data, minCodeSize, pixelCount) {
   const MAX = 4096, clear = 1 << minCodeSize, eoi = clear + 1;
   let codeSize = minCodeSize + 1, next = eoi + 1;
@@ -1537,7 +1520,6 @@ async function decodeGif(file) {
   return parseGif(await file.arrayBuffer());
 }
 
-/* ZIP */
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
   for (let i = 0; i < 256; i++) {
@@ -1594,7 +1576,6 @@ function buildZip(files) {
   return new Blob([...parts, ...central, eocd], { type: "application/zip" });
 }
 
-/* CONFIG */
 function getCfg() {
   const L = getLayout();
   const fps = state.sourceType === "gif"
@@ -1603,13 +1584,11 @@ function getCfg() {
   return { fw: L.fw, fh: L.fh, sheetW: L.pageW, sheetH: L.pageH, fps, L };
 }
 
-/* SPRITE LIB */
 function genSpriteLib() {
   const c = getCfg();
   return `--[[═══════════════════════════════════════════════════════════════════════════
-  SpriteLib v2.1 · Multi-asset sprite folder for Roblox
-  ใช้ได้ทั้ง Studio (rbxassetid://) และ Executor (URL ภายนอก auto-download)
-  โหลด: local SpriteLib = loadstring(game:HttpGet("URL/SpriteLib.lua"))()
+  SpriteLib v2.2 · Multi-asset sprite folder for Roblox
+  ★ cache filename ไม่มีนามสกุล · ใช้ game:HttpGet · เช็ค HTML
 ═══════════════════════════════════════════════════════════════════════════]]
 
 local RunService = game:GetService("RunService")
@@ -1619,20 +1598,30 @@ local IS_EXEC = _has("writefile") and _has("readfile") and _has("getcustomasset"
     and _has("isfile") and _has("isfolder") and _has("makefolder")
 
 local function _httpGet(url)
-    if _has("request") then
-        local ok, r = pcall(request, { Url = url, Method = "GET", Headers = { ["Accept-Encoding"] = "identity" } })
-        if ok and r and r.Body and #r.Body > 0 then return r.Body end
-    end
-    if _has("http_request") then
-        local ok, r = pcall(http_request, { Url = url, Method = "GET", Headers = { ["Accept-Encoding"] = "identity" } })
-        if ok and r and r.Body and #r.Body > 0 then return r.Body end
-    end
-    if _G.syn and _G.syn.request then
-        local ok, r = pcall(_G.syn.request, { Url = url, Method = "GET", Headers = { ["Accept-Encoding"] = "identity" } })
-        if ok and r and r.Body and #r.Body > 0 then return r.Body end
-    end
+    -- 1) game:HttpGet (ใช้ได้ทุกที่ ใช้บ่อยสุด)
     local ok, r = pcall(game.HttpGet, game, url, true)
-    if ok and r then return r end
+    if ok and type(r) == "string" and #r > 0 and not r:find("<!DOCTYPE html>") then return r end
+    -- 2) request
+    if _has("request") then
+        local ok2, r2 = pcall(request, { Url = url, Method = "GET" })
+        if ok2 and r2 and r2.Body and #r2.Body > 0 and not r2.Body:find("<!DOCTYPE html>") then
+            return r2.Body
+        end
+    end
+    -- 3) http_request
+    if _has("http_request") then
+        local ok3, r3 = pcall(http_request, { Url = url, Method = "GET" })
+        if ok3 and r3 and r3.Body and #r3.Body > 0 and not r3.Body:find("<!DOCTYPE html>") then
+            return r3.Body
+        end
+    end
+    -- 4) syn.request
+    if _G.syn and _G.syn.request then
+        local ok4, r4 = pcall(_G.syn.request, { Url = url, Method = "GET" })
+        if ok4 and r4 and r4.Body and #r4.Body > 0 and not r4.Body:find("<!DOCTYPE html>") then
+            return r4.Body
+        end
+    end
     error("[SpriteLib] HTTP failed: " .. url)
 end
 
@@ -1640,15 +1629,6 @@ local function _hash(s)
     local h = 5381
     for i = 1, #s do h = (h * 33 + s:byte(i)) % 4294967296 end
     return string.format("%08x", h)
-end
-local function _extOf(url)
-    local p = url:match("^[^?#]*") or url
-    local e = p:match("%.([%w]+)$")
-    if not e then return ".png" end
-    e = e:lower()
-    if e == "jpg" or e == "jpeg" then return ".jpg" end
-    if e == "png" or e == "gif" or e == "webp" then return "." .. e end
-    return ".png"
 end
 local function _isAsset(v)
     return type(v) == "string"
@@ -1769,10 +1749,8 @@ function Storage:add(name, url, settings)
     end
     local ok, body = pcall(_httpGet, url)
     if not ok or not body or #body == 0 then return false, "download failed" end
-    if #body >= 2 and body:byte(1) == 0x1F and body:byte(2) == 0x8B then
-        return false, "gzip response (โฮสต์ไม่สนใจ Accept-Encoding)"
-    end
-    local fname = _hash(url) .. _extOf(url)
+    -- ★ cache filename = hash ล้วน ไม่มีนามสกุล
+    local fname = _hash(url)
     local fpath = self.path .. "/" .. fname
     local wok = pcall(writefile, fpath, body)
     if not wok then return false, "write failed" end
@@ -1855,7 +1833,7 @@ function Storage:clear()
 end
 
 local SpriteLib = {}
-SpriteLib.Version = "2.1"
+SpriteLib.Version = "2.2"
 SpriteLib.Config = {
     Columns = ${state.cols},
     Rows = ${state.rows},
@@ -1920,7 +1898,7 @@ end
 return SpriteLib`;
 }
 
-/* FOR EXECUTOR FROM STUDIO v3.4 */
+/* FOR EXECUTOR FROM STUDIO v3.6 */
 function genForExecutorFromStudio() {
   const c = getCfg();
   const L = c.L;
@@ -1928,18 +1906,23 @@ function genForExecutorFromStudio() {
   const urlLines = [];
   for (let p = 0; p < L.pages; p++) {
     const nm = L.pages > 1 ? "sprite_sheet_" + (p + 1) + "." + ext : "sprite_sheet." + ext;
-    urlLines.push('    "https://i.imgur.com/xxxxxxxx.' + ext + '",   -- ← หน้า ' + (p + 1) + ' : ' + nm);
+    urlLines.push('    "https://raw.githubusercontent.com/USER/REPO/main/' + nm + '",   -- ← หน้า ' + (p + 1));
   }
   return `-- ═══════════════════════════════════════════════════════════════════════
---  ForExecutorFromStudio.lua · v3.4 (FIXED: gzip + parent + filename)
+--  ForExecutorFromStudio.lua · v3.6
 -- ═══════════════════════════════════════════════════════════════════════
---  ★ v3.4 ใหม่ (แก้ 5 จุด):
---    [1] HTTP บังคับ Accept-Encoding: identity → กัน gzip กลับมาเป็นไฟล์พัง
---    [2] ถ้า response เริ่ม 1F 8B (gzip) → throw ทันที ไม่เขียนไฟล์พัง
---    [3] ถ้า response เป็น HTML → throw (น่าจะ 403/404)
---    [4] หลัง writefile → readfile กลับมาเทียบขนาด
---    [5] script.Parent ถ้าไม่ใช่ ImageLabel → หาลูกให้อัตโนมัติ
---    [6] ชื่อไฟล์ cache = djb2(url) ล้วน (ไม่มี #url ต่อท้าย กันชื่อเพี้ยน)
+--  ★ v3.6 ใหม่ (ใช้ pattern เดียวกับ Xless):
+--    • cache filename = hash ล้วน ไม่มีนามสกุล (getcustomasset รับได้)
+--    • HTTP: ลอง game:HttpGet ก่อนเป็นอันดับ 1 (เสถียรสุด)
+--    • เช็คแค่ content:find("<!DOCTYPE html>") → กัน 404
+--    • ลบ Accept-Encoding gzip ที่ไม่จำเป็นออก
+--    • บังคับ rename target เป็น "videoframe" เสมอ
+--    • ถ้า script.Parent เป็น Frame → หาลูก ImageLabel ให้อัตโนมัติ
+--    • print magic 4 ไบต์แรก ของทุก response
+--
+--  ★★★ URL GitHub raw ต้องมี raw. นำหน้า ★★★
+--    ✓ https://raw.githubusercontent.com/USER/REPO/main/file.png
+--    ✗ https://githubusercontent.com/...  ← 404
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- ╔═══════════════════════════════════════════════════════════════════╗
@@ -1961,9 +1944,9 @@ local CFG = {
     AutoPlay      = true,
     Folder        = "from_studio",
     Refresh       = false,
-    Retries       = 3,
     Timeout       = 180,
     Verbose       = true,
+    TargetName    = "videoframe",
 }
 -- ╔═══════════════════════════════════════════════════════════════════╗
 -- ║  ★★★ อย่าแตะอะไรด้านล่างนี้ ★★★                                    ║
@@ -1976,6 +1959,7 @@ do
             assert(type(u) == "string" and (u:match("^https?://") or u:match("^rbxassetid://") or u:match("^rbxasset://")),
                 ("URLS[%d] ต้องเป็น http(s) link"):format(i))
             assert(u:find("xxxxxxxx") == nil, ("URLS[%d] ลืมแก้ URL!"):format(i))
+            assert(u:find("USER/REPO") == nil, ("URLS[%d] ลืมแก้ USER/REPO!"):format(i))
         end
         assert(CFG.Columns >= 1 and CFG.Rows >= 1, "Columns/Rows ต้อง >= 1")
         assert(CFG.FramesPerPage == CFG.Columns * CFG.Rows, "FramesPerPage ต้อง = Columns × Rows")
@@ -2007,134 +1991,111 @@ local target
 do
     local parent = (typeof(script) == "Instance") and script.Parent or nil
     local cand = nil
+    local want = tostring(CFG.TargetName or "videoframe"):lower()
+
     if parent then
-        if parent:IsA("ImageLabel") or parent:IsA("ImageButton") then
+        if parent.Name:lower() == want
+            and (parent:IsA("ImageLabel") or parent:IsA("ImageButton")) then
             cand = parent
-        else
+        end
+        if not cand then
             for _, d in ipairs(parent:GetDescendants()) do
-                if d:IsA("ImageLabel") or d:IsA("ImageButton") then
+                if d.Name:lower() == want
+                    and (d:IsA("ImageLabel") or d:IsA("ImageButton")) then
                     cand = d; break
                 end
             end
         end
+        if not cand then
+            if parent:IsA("ImageLabel") or parent:IsA("ImageButton") then
+                cand = parent
+            else
+                for _, d in ipairs(parent:GetDescendants()) do
+                    if d:IsA("ImageLabel") or d:IsA("ImageButton") then
+                        cand = d; break
+                    end
+                end
+            end
+        end
     end
+
     if not cand then
         error("[ForExecutorFromStudio] ไม่เจอ ImageLabel/ImageButton ใต้ " ..
             (parent and parent:GetFullName() or "script.Parent=nil"), 0)
     end
+
     target = cand
+    if target.Name ~= CFG.TargetName then
+        pcall(function() target.Name = CFG.TargetName end)
+    end
+
     if CFG.Verbose then
         warn("[ForExecutorFromStudio] target = " .. cand:GetFullName() ..
-            " (" .. cand.ClassName .. ")")
+            " → rename → " .. target.Name)
     end
 end
 
--- ── HTTP ─────────────────────────────────────────────────────────────
-local function isGzip(s)
-    return type(s) == "string" and #s >= 2
-        and s:byte(1) == 0x1F and s:byte(2) == 0x8B
-end
-local function isHtml(s)
-    if type(s) ~= "string" or #s < 20 then return false end
-    local head = s:sub(1, 200):lower()
-    return head:find("<!doctype") ~= nil or head:find("<html") ~= nil
-end
-
+-- ── HTTP: game:HttpGet first + check HTML ────────────────────────────
 local function httpGet(url)
     local lastErr = "unknown"
-    local HEADERS = {
-        ["Accept-Encoding"] = "identity",
-        ["Accept"]          = "image/*,*/*;q=0.8",
-        ["User-Agent"]      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Roblox/Executor",
-    }
 
-    local function validate(res, name)
-        if type(res) ~= "string" or #res == 0 then
-            return nil, name .. ": empty"
-        end
-        if isGzip(res) then
-            return nil, name .. ": gzip (เซิร์ฟเวอร์ไม่สนใจ Accept-Encoding: identity)"
-        end
-        if isHtml(res) then
-            return nil, name .. ": HTML response (403/404?)"
-        end
-        if #res < 100 then
-            return nil, name .. ": เล็กเกิน (" .. #res .. "B)"
-        end
-        return res
-    end
-
-    local methods = {
-        { "request", function()
-            if type(request) ~= "function" then error("n/a") end
-            local r = request({ Url = url, Method = "GET", Headers = HEADERS })
-            if not r then error("no response") end
-            if r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
-                error("HTTP " .. tostring(r.StatusCode))
-            end
-            return r.Body
-        end },
-        { "http_request", function()
-            if type(http_request) ~= "function" then error("n/a") end
-            local r = http_request({ Url = url, Method = "GET", Headers = HEADERS })
-            if not r then error("no response") end
-            if r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
-                error("HTTP " .. tostring(r.StatusCode))
-            end
-            return r.Body
-        end },
-        { "syn.request", function()
-            if type(syn) ~= "table" or type(syn.request) ~= "function" then error("n/a") end
-            local r = syn.request({ Url = url, Method = "GET", Headers = HEADERS })
-            if not r then error("no response") end
-            if r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
-                error("HTTP " .. tostring(r.StatusCode))
-            end
-            return r.Body
-        end },
-        { "game:HttpGet", function()
-            return game:HttpGet(url, true)
-        end },
-    }
-
-    local tries = math.max(1, tonumber(CFG.Retries) or 3)
-    for attempt = 1, tries do
-        for _, m in ipairs(methods) do
-            local ok, res = pcall(m[2])
-            if ok then
-                local body, err = validate(res, m[1])
-                if body then
-                    if CFG.Verbose then
-                        print(("[HTTP] ✓ %s · %d bytes · magic=%02X%02X%02X%02X"):format(
-                            m[1], #body, body:byte(1) or 0, body:byte(2) or 0,
-                            body:byte(3) or 0, body:byte(4) or 0))
-                    end
-                    return body
+    -- 1) game:HttpGet (เสถียรสุด — Xless ใช้ตัวนี้)
+    do
+        local ok, r = pcall(game.HttpGet, game, url, true)
+        if ok and type(r) == "string" and #r > 0 then
+            if not r:find("<!DOCTYPE html>") and not r:find("<html") then
+                if CFG.Verbose then
+                    print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(
+                        #r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0))
                 end
-                lastErr = err
-            else
-                lastErr = m[1] .. ": " .. tostring(res)
+                return r
             end
+            lastErr = "game:HttpGet: HTML response (404?)"
+        else
+            lastErr = "game:HttpGet: " .. tostring(r)
         end
-        if attempt < tries then task.wait(0.4 * attempt) end
     end
+
+    -- 2) request
+    if type(request) == "function" then
+        local ok, r = pcall(request, { Url = url, Method = "GET" })
+        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then
+            if CFG.Verbose then
+                print(("[HTTP] ✓ request · %d bytes · magic=%02X%02X%02X%02X"):format(
+                    #r.Body, r.Body:byte(1) or 0, r.Body:byte(2) or 0,
+                    r.Body:byte(3) or 0, r.Body:byte(4) or 0))
+            end
+            return r.Body
+        end
+        lastErr = "request failed"
+    end
+
+    -- 3) http_request
+    if type(http_request) == "function" then
+        local ok, r = pcall(http_request, { Url = url, Method = "GET" })
+        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then
+            return r.Body
+        end
+        lastErr = "http_request failed"
+    end
+
+    -- 4) syn.request
+    if type(syn) == "table" and type(syn.request) == "function" then
+        local ok, r = pcall(syn.request, { Url = url, Method = "GET" })
+        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then
+            return r.Body
+        end
+        lastErr = "syn.request failed"
+    end
+
     error("HTTP GET failed (" .. url .. ")\\n  สาเหตุ: " .. tostring(lastErr), 0)
 end
 
--- ── hash filename ─────────────────────────────────────────────────────
+-- ── hash ─────────────────────────────────────────────────────────────
 local function djb2(s)
     local h = 5381
     for i = 1, #s do h = (h * 33 + s:byte(i)) % 4294967296 end
     return string.format("%08x", h)
-end
-local function extOf(url)
-    local pathOnly = url:match("^[^?#]*") or url
-    local e = pathOnly:match("%.([%w]+)$")
-    if not e then return ".png" end
-    e = e:lower()
-    if e == "jpg" or e == "jpeg" then return ".jpg" end
-    if e == "png" or e == "gif" or e == "webp" or e == "bmp" then return "." .. e end
-    return ".png"
 end
 
 local function resolveAsset(url)
@@ -2145,17 +2106,14 @@ local function resolveAsset(url)
     if not isfolder(root) then pcall(makefolder, root) end
     if not isfolder(dir)  then pcall(makefolder, dir)  end
 
-    local fname = dir .. "/" .. djb2(url) .. extOf(url)
+    -- ★ filename = hash ล้วน ไม่มีนามสกุล (แบบ Xless)
+    local fname = dir .. "/" .. djb2(url)
 
     if CFG.Refresh or not isfile(fname) then
         local body = httpGet(url)
         local ok, werr = pcall(writefile, fname, body)
         if not ok then error("writefile: " .. tostring(werr), 0) end
         if not isfile(fname) then error("writefile ok แต่ isfile=false: " .. fname, 0) end
-        local onDisk = #readfile(fname)
-        if onDisk ~= #body then
-            error(("ไฟล์เขียนไม่ครบ! disk=%d body=%d"):format(onDisk, #body), 0)
-        end
         if CFG.Verbose then
             print(("[CACHE] wrote %s (%d bytes)"):format(fname, #body))
         end
@@ -2330,20 +2288,20 @@ apply()
 if CFG.AutoPlay then API:Play() end
 
 _G.SpriteFromStudio = API
-print(("[ForExecutorFromStudio] ✓ %s · %d เฟรม · %d หน้า · %d fps · %dx%d"):format(
-    target:GetFullName(), TOTAL, N, CFG.Fps, FW, FH))
+print(("[ForExecutorFromStudio] ✓ %s (%s) · %d เฟรม · %d หน้า · %d fps · %dx%d"):format(
+    target:GetFullName(), target.Name, TOTAL, N, CFG.Fps, FW, FH))
 `;
 }
 
-/* FOR EXECUTOR v3 */
+/* FOR EXECUTOR v4 */
 function genForExecutor() {
   const c = getCfg();
   return `--[[═══════════════════════════════════════════════════════════════════
-  ForExecutor.lua · v3 · FIXED: gzip + filename
+  ForExecutor.lua · v4 · game:HttpGet first + cache ไม่มีนามสกุล
 ═══════════════════════════════════════════════════════════════════════]]
 
 -- ★★★ แก้ตรงนี้ ★★★
-local URL = "https://i.imgur.com/xxxxxxxx.png"
+local URL = "https://raw.githubusercontent.com/USER/REPO/main/sprite_sheet.png"
 local CFG = {
     Columns    = ${state.cols},
     Rows       = ${state.rows},
@@ -2356,7 +2314,6 @@ local CFG = {
     Scale      = 3,
     Storage    = "default",
     Draggable  = true,
-    Retries    = 3,
     Verbose    = true,
 }
 -- ★★★ ไม่ต้องแก้ด้านล่าง ★★★
@@ -2365,90 +2322,40 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
-local function isGzip(s)
-    return type(s) == "string" and #s >= 2 and s:byte(1) == 0x1F and s:byte(2) == 0x8B
-end
-local function isHtml(s)
-    if type(s) ~= "string" or #s < 20 then return false end
-    local h = s:sub(1, 200):lower()
-    return h:find("<!doctype") or h:find("<html")
-end
-
 local function http(url)
-    local lastErr = "unknown"
-    local HEADERS = {
-        ["Accept-Encoding"] = "identity",
-        ["Accept"]          = "image/*,*/*;q=0.8",
-        ["User-Agent"]      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Roblox/Executor",
-    }
-    local function validate(res, name)
-        if type(res) ~= "string" or #res == 0 then return nil, name..": empty" end
-        if isGzip(res) then return nil, name..": gzip" end
-        if isHtml(res) then return nil, name..": HTML (403/404?)" end
-        if #res < 100 then return nil, name..": เล็กเกิน ("..#res.."B)" end
-        return res
-    end
-    local methods = {
-        { "request", function()
-            if type(request) ~= "function" then error("n/a") end
-            local r = request({ Url = url, Method = "GET", Headers = HEADERS })
-            if r and r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
-                error("HTTP "..r.StatusCode) end
-            return r and r.Body
-        end },
-        { "http_request", function()
-            if type(http_request) ~= "function" then error("n/a") end
-            local r = http_request({ Url = url, Method = "GET", Headers = HEADERS })
-            if r and r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
-                error("HTTP "..r.StatusCode) end
-            return r and r.Body
-        end },
-        { "syn.request", function()
-            if type(syn) ~= "table" or type(syn.request) ~= "function" then error("n/a") end
-            local r = syn.request({ Url = url, Method = "GET", Headers = HEADERS })
-            return r and r.Body
-        end },
-        { "game:HttpGet", function()
-            return game:HttpGet(url, true)
-        end },
-    }
-    local tries = math.max(1, tonumber(CFG.Retries) or 3)
-    for attempt = 1, tries do
-        for _, m in ipairs(methods) do
-            local ok, res = pcall(m[2])
-            if ok then
-                local body, err = validate(res, m[1])
-                if body then
-                    if CFG.Verbose then
-                        print(("[HTTP] ✓ %s · %d bytes · magic=%02X%02X%02X%02X"):format(
-                            m[1], #body, body:byte(1) or 0, body:byte(2) or 0,
-                            body:byte(3) or 0, body:byte(4) or 0))
-                    end
-                    return body
-                end
-                lastErr = err
-            else
-                lastErr = m[1]..": "..tostring(res)
-            end
+    local ok, r = pcall(game.HttpGet, game, url, true)
+    if ok and type(r) == "string" and #r > 0 and not r:find("<!DOCTYPE html>") then
+        if CFG.Verbose then
+            print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(
+                #r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0))
         end
-        if attempt < tries then task.wait(0.4 * attempt) end
+        return r
     end
-    error("[ForExecutor] HTTP fail: "..tostring(lastErr), 0)
+    if type(request) == "function" then
+        local ok2, r2 = pcall(request, { Url = url, Method = "GET" })
+        if ok2 and r2 and r2.Body and #r2.Body > 0 and not r2.Body:find("<!DOCTYPE html>") then
+            return r2.Body
+        end
+    end
+    if type(http_request) == "function" then
+        local ok3, r3 = pcall(http_request, { Url = url, Method = "GET" })
+        if ok3 and r3 and r3.Body and #r3.Body > 0 and not r3.Body:find("<!DOCTYPE html>") then
+            return r3.Body
+        end
+    end
+    if type(syn) == "table" and type(syn.request) == "function" then
+        local ok4, r4 = pcall(syn.request, { Url = url, Method = "GET" })
+        if ok4 and r4 and r4.Body and #r4.Body > 0 and not r4.Body:find("<!DOCTYPE html>") then
+            return r4.Body
+        end
+    end
+    error("[ForExecutor] HTTP failed: " .. url, 0)
 end
 
 local function djb2(s)
     local h = 5381
     for i = 1, #s do h = (h * 33 + s:byte(i)) % 4294967296 end
     return string.format("%08x", h)
-end
-local function extOf(url)
-    local p = url:match("^[^?#]*") or url
-    local e = p:match("%.([%w]+)$")
-    if not e then return ".png" end
-    e = e:lower()
-    if e == "jpg" or e == "jpeg" then return ".jpg" end
-    if e == "png" or e == "gif" or e == "webp" or e == "bmp" then return "."..e end
-    return ".png"
 end
 
 local function resolve(url)
@@ -2458,15 +2365,12 @@ local function resolve(url)
     if not isfolder(root) then pcall(makefolder, root) end
     if not isfolder(dir) then pcall(makefolder, dir) end
 
-    local fname = dir .. "/" .. djb2(url) .. extOf(url)
+    -- ★ filename = hash ล้วน
+    local fname = dir .. "/" .. djb2(url)
     if not isfile(fname) then
         local body = http(url)
         local ok, werr = pcall(writefile, fname, body)
         if not ok then error("[ForExecutor] writefile: "..tostring(werr), 0) end
-        local onDisk = #readfile(fname)
-        if onDisk ~= #body then
-            error(("[ForExecutor] ไฟล์เขียนไม่ครบ! disk=%d body=%d"):format(onDisk, #body), 0)
-        end
         if CFG.Verbose then print(("[CACHE] wrote %s (%d bytes)"):format(fname, #body)) end
     end
     local id, lerr
@@ -2513,6 +2417,7 @@ stroke.Transparency = 0.4
 stroke.Parent = frame
 
 local image = Instance.new("ImageLabel")
+image.Name = "videoframe"
 image.Size = UDim2.new(1, 0, 0, dispH)
 image.BackgroundTransparency = 1
 image.Image = assetId
@@ -2606,7 +2511,6 @@ print(("[ForExecutor] ✓ %d เฟรม · %d fps"):format(CFG.FrameCount, CFG
 `;
 }
 
-/* FRAMES + PLAYER + README */
 function genFramesLua() {
   const c = getCfg();
   return `-- Frames.lua
@@ -2718,40 +2622,31 @@ function genReadme(ext, fmt) {
 
 ═══ ไฟล์ที่ได้ ═══
   ${sheetName}
-${paged ? "" : "  SpriteLib.lua                    → lib ใหญ่ · multi-asset folder · Studio + Executor\n"}  ForExecutorFromStudio.lua        → วาง LocalScript ใน Studio · gui2lua → executor (v3.4)
-${paged ? "" : "  ForExecutor.lua                  → loadstring ใน Delta/Synapse (v3)\n  Frames.lua + VideoPlayer.lua     → Studio (แบบ require)\n"}
-═══ ★★★ v3.4 แก้อะไร ★★★ ═══
-  1. บังคับ Accept-Encoding: identity → กัน gzip ทำให้ไฟล์พัง
-  2. ถ้าได้ gzip/HTML → throw ทันที (ไม่เขียนไฟล์เสีย)
-  3. หลัง writefile → readfile เทียบขนาดทุกครั้ง
-  4. script.Parent ถ้าไม่ใช่ ImageLabel → หาลูกให้อัตโนมัติ
-  5. ชื่อไฟล์ = djb2(url).ext (ไม่มี #url ต่อท้าย กันชื่อเพี้ยน)
-  6. print ดูขนาด + magic 4 ไบต์แรก (89504E47 = PNG ✓)
+  ForExecutorFromStudio.lua   ★ v3.6
+${paged ? "" : "  SpriteLib.lua · ForExecutor.lua (v4) · Frames.lua · VideoPlayer.lua\n"}
+═══ ★★★ v3.6 / v4 เปลี่ยนอะไร ★★★ ═══
+  1. cache filename = hash ล้วน ไม่มีนามสกุล (แบบเดียวกับ Xless Audio)
+     → getcustomasset(path) รับได้เลย ไม่ต้องมี .png
+  2. HTTP: game:HttpGet เป็นตัวแรก (เสถียรที่สุด)
+     → ถ้าไม่ได้ค่อย fallback ไป request / http_request / syn.request
+  3. เช็ค HTML แค่ 2 อย่าง: content:find("<!DOCTYPE html>") หรือ content:find("<html")
+  4. บังคับ rename target เป็น "videoframe" เสมอ
+  5. print magic 4 ไบต์แรก (89504E47 = PNG ✓ / 1F8B = gzip / 3C68 = <htm)
 
-═══ วิธีใช้ ForExecutorFromStudio + gui2lua ═══
-  1. อัปโหลดรูป sheet ทุกหน้าขึ้น host → เอา direct link
-     ★ แนะนำ catbox.moe (imgur บล็อค hotlink บ่อย)
-  2. ใน Studio: สร้าง ScreenGui + ImageLabel
-  3. วาง LocalScript ใต้ ImageLabel → paste ForExecutorFromStudio.lua
-  4. แก้ URLS ให้ครบทุกหน้า เรียงหน้า 1 → ${L.pages}
-  5. Studio จะ warn (ไม่มี writefile) → ปล่อยผ่าน ✓
-  6. ใช้ gui2lua แปลงทั้ง ScreenGui → save .lua
-  7. executor → paste → Execute → เล่นเลย ✓
+═══ เรื่อง URL ═══
+  GitHub raw ต้องมี raw. นำหน้า:
+    ✓ https://raw.githubusercontent.com/imc72s/Assets-SS/main/pf.png
+    ✗ https://githubusercontent.com/...            ← 404
 
-═══ ถ้ายังพัง ★ อ่าน output window ═══
-  [HTTP] ✓ request · 45231 bytes · magic=89504E47   ← ปกติ
-  [HTTP] ✓ request · 8102 bytes · magic=1F8B0800     ← gzip! โฮสต์บล็อค → ย้าย host
-  [HTTP] ✓ request · 512 bytes · magic=3C68746D     ← HTML (403) → direct link ผิด
-
-═══ Cache ═══
-  workspace/SpriteLib/from_studio/<hash8>.png
+═══ Cache location ═══
+  workspace/SpriteLib/from_studio/<hash8>
+  workspace/SpriteLib/default/<hash8>
 
 ═══ API ═══
   _G.SpriteFromStudio:Pause() / :Play() / :SetFrame(n) / :SetFps(n) / :GetPage()
 `;
 }
 
-/* EXPORT */
 function buildExportPage(p, L) {
   const frames = getFrames();
   const cv = document.createElement("canvas");
@@ -2833,7 +2728,6 @@ function pagedBlocked() {
   return false;
 }
 
-/* FILE PICKER */
 document.querySelectorAll(".file-item").forEach(item => {
   const key = item.dataset.file;
   const cb = item.querySelector('input[type=checkbox]');
@@ -2859,7 +2753,6 @@ document.querySelectorAll(".fi-copy").forEach(btn => {
   });
 });
 
-/* EVENTS */
 els.drop.addEventListener("click", () => els.file.click());
 els.file.addEventListener("change", e => {
   if (e.target.files.length) handleFiles(e.target.files);
