@@ -105,7 +105,6 @@
   .status.loading{color:var(--accent);position:relative;padding-left:26px}
   .status.loading::before{content:"";position:absolute;left:8px;top:50%;width:12px;height:12px;margin-top:-6px;border:2px solid rgba(88,166,255,.25);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  code{background:#0d1117;padding:1px 5px;border-radius:4px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--accent)}
   .hint{font-size:11.5px;color:var(--dim);line-height:1.65;margin-top:8px}
   .hint b{color:var(--fg)}
   .file-picker{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
@@ -219,12 +218,12 @@
         </select>
       </div>
       <div class="row one">
-        <label>ขนาดหน้า sheet สูงสุด (ไฟล์ใหญ่จะแตกเป็นหลายรูปให้เอง)</label>
+        <label>ขนาดหน้า sheet สูงสุด</label>
         <select id="maxPage">
           <option value="0" selected>ไม่แยก — ภาพเดียวทั้งหมด</option>
-          <option value="1024">1024 px (เข้ากันได้สุด)</option>
+          <option value="1024">1024 px</option>
           <option value="2048">2048 px</option>
-          <option value="4096">4096 px (ไฟล์ใหญ่มาก)</option>
+          <option value="4096">4096 px</option>
         </select>
       </div>
       <div class="hint" id="packHint">—</div>
@@ -286,16 +285,16 @@
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">ForExecutorFromStudio.lua</div>
-            <div class="fi-desc">★ v4.1 · กัน FrameSize 1x1 · target = videoframe</div>
+            <div class="fi-desc">★ v5.0 · ลบ AspectRatio เก่า · Image first → wait → RectSize</div>
           </div>
-          <span class="fi-size">~8 KB</span>
+          <span class="fi-size">~9 KB</span>
           <button class="fi-copy" data-copy="fromstudio">📋</button>
         </div>
         <div class="file-item exec checked" data-file="executor">
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">ForExecutor.lua</div>
-            <div class="fi-desc">★ v6 · loadstring</div>
+            <div class="fi-desc">★ v6.5 · Image first → wait → RectSize</div>
           </div>
           <span class="fi-size">~5 KB</span>
           <button class="fi-copy" data-copy="executor">📋</button>
@@ -1467,24 +1466,17 @@ function buildZip(files) {
   return new Blob([...parts, ...central, eocd], { type: "application/zip" });
 }
 
-/* ★★★ FIX: getCfg ตรวจ FrameSize ก่อน — กัน 1x1 ★★★ */
 function getCfg() {
-  if (state.sourceType === "none") {
-    throw new Error("ยังไม่ได้โหลดไฟล์ — โหลดรูป/วิดีโอ/GIF ก่อน");
-  }
+  if (state.sourceType === "none") throw new Error("ยังไม่ได้โหลดไฟล์ — โหลดรูป/วิดีโอ/GIF ก่อน");
   const L = getLayout();
-  if (L.fw < 2 || L.fh < 2) {
-    throw new Error("FrameSize ไม่ถูกต้อง (" + L.fw + "×" + L.fh + ") — โหลดไฟล์ใหม่ หรือตรวจ Columns/Rows ให้พอดีกับรูป");
-  }
+  if (L.fw < 2 || L.fh < 2) throw new Error("FrameSize ไม่ถูกต้อง (" + L.fw + "×" + L.fh + ") — โหลดไฟล์ใหม่ หรือตรวจ Columns/Rows");
   const fps = state.sourceType === "gif" ? Math.max(1, Math.round(averageFps())) : state.fps;
   return { fw: L.fw, fh: L.fh, sheetW: L.pageW, sheetH: L.pageH, fps, L };
 }
 
 function genSpriteLib() {
   const c = getCfg();
-  return `--[[═══════════════════════════════════════════════════════════════════════════
-  SpriteLib v2.3 · Roblox sprite folder · cache filename ไม่มีนามสกุล
-═══════════════════════════════════════════════════════════════════════════]]
+  return `--[[ SpriteLib v2.3 · cache filename ไม่มีนามสกุล · game:HttpGet first ]]
 
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
@@ -1501,10 +1493,6 @@ local function _httpGet(url)
     if _has("http_request") then
         local ok3, r3 = pcall(http_request, { Url = url, Method = "GET" })
         if ok3 and r3 and r3.Body and #r3.Body > 0 and not r3.Body:find("<!DOCTYPE html>") then return r3.Body end
-    end
-    if _G.syn and _G.syn.request then
-        local ok4, r4 = pcall(_G.syn.request, { Url = url, Method = "GET" })
-        if ok4 and r4 and r4.Body and #r4.Body > 0 and not r4.Body:find("<!DOCTYPE html>") then return r4.Body end
     end
     error("[SpriteLib] HTTP failed: " .. url)
 end
@@ -1538,6 +1526,7 @@ function Player:_setup()
     local t = self.Target
     t.Visible = true; t.ImageTransparency = 0; t.BackgroundTransparency = 1
     t.Image = self.AssetId
+    task.wait(0.3)
     t.ImageRectSize = self.FrameSize
     t.ImageRectOffset = Vector2.new(0, 0)
     pcall(function() t.ResampleMode = Enum.ResamplerMode.Pixelated end)
@@ -1630,10 +1619,6 @@ function Storage:add(name, url, settings)
     local fpath = self.path .. "/" .. fname
     local wok = pcall(writefile, fpath, body)
     if not wok then return false, "write failed" end
-    if existing and existing.file and existing.file ~= fname then
-        local op = self.path .. "/" .. existing.file
-        if isfile(op) then pcall(delfile, op) end
-    end
     self.manifest.assets[name] = { file = fname, url = url, settings = settings, time = os.time(), size = #body }
     self:_save(); return true, self:_toId(fpath)
 end
@@ -1750,28 +1735,10 @@ function SpriteLib.preload(url, opts)
     return id
 end
 function SpriteLib.clearCache(name) Storage.new(name or "default"):clear() end
-function SpriteLib.listFolders()
-    if not IS_EXEC or not isfolder(ROOT) then return {} end
-    local ok, files = pcall(listfiles, ROOT)
-    if not ok then return {} end
-    local out = {}
-    for _, f in ipairs(files) do
-        local b = f:match("([^/\\\\]+)$")
-        if b and isfolder(ROOT .. "/" .. b) then table.insert(out, b) end
-    end
-    return out
-end
-function SpriteLib.removeFolder(name)
-    if not IS_EXEC then return false end
-    Storage.new(name):clear()
-    local p = ROOT .. "/" .. _sanitize(name)
-    if isfile(p .. "/manifest.json") then pcall(delfile, p .. "/manifest.json") end
-    if isfolder(p) then pcall(delfolder, p) end
-    return true
-end
 return SpriteLib`;
 }
 
+/* FOR EXECUTOR FROM STUDIO v5.0 */
 function genForExecutorFromStudio() {
   const c = getCfg();
   const L = c.L;
@@ -1782,18 +1749,16 @@ function genForExecutorFromStudio() {
     urlLines.push('    "https://raw.githubusercontent.com/USER/REPO/main/' + nm + '",   -- ← หน้า ' + (p + 1));
   }
   return `-- ═══════════════════════════════════════════════════════════════════════
---  ForExecutorFromStudio.lua · v4.1 (FIX FrameSize 1x1 · FORCE STYLE)
+--  ForExecutorFromStudio.lua · v5.0 · FINAL (BLACK IMAGE SOLVED)
 -- ═══════════════════════════════════════════════════════════════════════
---  ★ v4.1:
---    • ตรวจ FrameSize — ถ้า 1x1 error ทันที (ไม่เล่นภาพเพี้ยน)
---    • force Visible / ImageTransparency=0 / BackgroundTransparency=1
---    • Stretch + UIAspectRatioConstraint (AspectRatio = FW/FH) กันเบี้ยว
---    • set ImageRectSize ก่อน Offset ทุกเฟรม
---    • cache filename = hash ไม่มีนามสกุล (getcustomasset รับได้)
---
---  ★ URL GitHub raw ต้องมี raw. นำหน้า:
---    ✓ https://raw.githubusercontent.com/USER/REPO/main/file.png
---    ✗ https://githubusercontent.com/...
+--  ★★★ สาเหตุที่ภาพดำ (แก้ใน v5.0) ★★★
+--    [1] ลบ UIAspectRatioConstraint เก่าของ gui2lua ออก (มันทับของเรา)
+--    [2] ลำดับสำคัญ: set Image → รอ 0.5s → set ImageRectSize/Offset
+--      (ถ้าตั้ง RectSize ก่อน Image → Roblox reset เป็น 0,0 → ดำ)
+--    [3] ตั้ง BackgroundColor3 + BgTransparency=0.3 เห็นสี
+--    [4] PreloadAsync + callback ตรวจ asset status
+--    [5] ล้าง SliceCenter/SliceScale/ImageColor3 ที่ค้าง
+--    [6] force Visible=true, ImageTransparency=0
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- ╔═══════════════════════════════════════════════════════════════════╗
@@ -1808,7 +1773,6 @@ local CFG = {
     Rows          = ${L.pr},
     FramesPerPage = ${L.fpp},
     FrameCount    = ${state.count},
-    -- ★★★ FrameSize ต้องตรงกับที่เว็บคำนวณ (FW × FH px) ★★★
     FrameSize     = Vector2.new(${c.fw}, ${c.fh}),
     Order         = "${state.order}",
     Fps           = ${c.fps},
@@ -1839,9 +1803,7 @@ do
         assert(CFG.FrameCount > CFG.FramesPerPage * (#URLS - 1), "URLS เกิน")
         assert(CFG.Order == "row" or CFG.Order == "col", "Order ผิด")
         assert(CFG.Fps >= 1 and CFG.Fps <= 240, "Fps ผิด")
-        -- ★★★ เช็ค FrameSize กัน 1x1 ★★★
-        assert(CFG.FrameSize.X >= 2 and CFG.FrameSize.Y >= 2,
-            "FrameSize เล็กเกินไป (" .. CFG.FrameSize.X .. "×" .. CFG.FrameSize.Y .. ") — โหลด sprite sheet ใหม่ หรือตรวจ Columns/Rows")
+        assert(CFG.FrameSize.X >= 2 and CFG.FrameSize.Y >= 2, "FrameSize เล็กเกินไป — โหลดไฟล์ใหม่")
     end)
     if not ok then error("[ForExecutorFromStudio] CONFIG: " .. tostring(why), 0) end
     CFG.FrameSize = Vector2.new(math.floor(CFG.FrameSize.X), math.floor(CFG.FrameSize.Y))
@@ -1862,40 +1824,29 @@ local function httpGet(url)
     local lastErr = "unknown"
     do
         local ok, r = pcall(game.HttpGet, game, url, true)
-        if ok and type(r) == "string" and #r > 0 then
-            if not r:find("<!DOCTYPE html>") and not r:find("<html") then
-                if CFG.Verbose then
-                    print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(#r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0))
-                end
+        if ok and type(r) == "string" and #r > 500 then
+            if not r:find("<!DOCTYPE") and not r:find("<html") then
+                if CFG.Verbose then print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(#r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0)) end
                 return r
             end
-            lastErr = "game:HttpGet: HTML (404?)"
+            lastErr = "HTML response (404)"
         else
-            lastErr = "game:HttpGet: " .. tostring(r)
+            lastErr = "too small or nil"
         end
     end
     if type(request) == "function" then
         local ok, r = pcall(request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then
-            return r.Body
-        end
-        lastErr = "request failed"
+        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
     end
     if type(http_request) == "function" then
         local ok, r = pcall(http_request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then
-            return r.Body
-        end
-        lastErr = "http_request failed"
+        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
     end
     if type(syn) == "table" and type(syn.request) == "function" then
         local ok, r = pcall(syn.request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then
-            return r.Body
-        end
-        lastErr = "syn.request failed"
+        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
     end
-    error("HTTP GET failed (" .. url .. ")\\n  สาเหตุ: " .. tostring(lastErr), 0)
+    error("HTTP GET failed (" .. url .. ")\\n  " .. tostring(lastErr), 0)
 end
 
 local function djb2(s)
@@ -1915,15 +1866,19 @@ local function resolveAsset(url)
         local body = httpGet(url)
         local ok, werr = pcall(writefile, fname, body)
         if not ok then error("writefile: " .. tostring(werr), 0) end
-        if not isfile(fname) then error("writefile ok แต่ isfile=false: " .. fname, 0) end
+        if not isfile(fname) then error("writefile ok แต่ isfile=false", 0) end
+        local onDisk = #readfile(fname)
+        if onDisk ~= #body then error(("ไฟล์เขียนไม่ครบ disk=%d body=%d"):format(onDisk, #body), 0) end
         if CFG.Verbose then print(("[CACHE] wrote %s (%d bytes)"):format(fname, #body)) end
+    elseif CFG.Verbose then
+        print("[CACHE] hit: " .. fname)
     end
     local id, lerr
-    for i = 1, 3 do
+    for i = 1, 5 do
         local ok, res = pcall(getcustomasset, fname)
         if ok and res then id = res; break end
         lerr = res
-        if i < 3 then task.wait(0.15 * i) end
+        task.wait(0.2 * i)
     end
     if not id then error("getcustomasset: " .. tostring(lerr), 0) end
     return id
@@ -1941,12 +1896,12 @@ end
 do
     local t0 = os.clock()
     while pending > 0 do
-        if os.clock() - t0 > CFG.Timeout then error("[ForExecutorFromStudio] timeout " .. CFG.Timeout .. "s", 0) end
+        if os.clock() - t0 > CFG.Timeout then error("timeout " .. CFG.Timeout .. "s", 0) end
         task.wait()
     end
 end
 for i = 1, N do
-    if not assetIds[i] then error(("[ForExecutorFromStudio] หน้า %d ล้ม: %s"):format(i, tostring(errs[i])), 0) end
+    if not assetIds[i] then error(("หน้า %d ล้ม: %s"):format(i, tostring(errs[i])), 0) end
 end
 
 local FW, FH = CFG.FrameSize.X, CFG.FrameSize.Y
@@ -1974,89 +1929,98 @@ do
             end
         end
     end
-    if not cand then error("[ForExecutorFromStudio] ไม่เจอ ImageLabel/ImageButton ใต้ " .. (parent and parent:GetFullName() or "script.Parent=nil"), 0) end
+    if not cand then error("ไม่เจอ ImageLabel/ImageButton ใต้ " .. (parent and parent:GetFullName() or "nil"), 0) end
     target = cand
     if target.Name ~= CFG.TargetName then pcall(function() target.Name = CFG.TargetName end) end
 end
 
-local function forceStyle(img, transparent)
-    pcall(function() img.Visible = true end)
-    pcall(function() img.BackgroundTransparency = 1 end)
-    pcall(function() img.BorderSizePixel = 0 end)
-    pcall(function() img.ImageTransparency = transparent and 1 or 0 end)
-    pcall(function() img.ResampleMode = Enum.ResamplerMode.Pixelated end)
-    pcall(function() img.ScaleType = Enum.ScaleType.Stretch end)
-    pcall(function() img.SliceCenter = Rect.new(0, 0, 0, 0) end)
-    pcall(function() img.SliceScale = 1 end)
-end
+-- ═════════════════════════════════════════════════════════════════════
+--  ★★★ CLEAN SLATE — ล้างค่าที่ทำให้ภาพดำ ★★★
+-- ═════════════════════════════════════════════════════════════════════
+pcall(function() target.Image = "" end)
+pcall(function() target.ImageRectSize = Vector2.new(0, 0) end)
+pcall(function() target.ImageRectOffset = Vector2.new(0, 0) end)
+task.wait(0.05)
 
-forceStyle(target, false)
-
--- ── target setup ──
-do
-    -- ★ ถ้า ImageLabel ขนาด 0x0 → ตั้งขนาดให้ใหญ่พอ
-    local absX = target.AbsoluteSize.X
-    local absY = target.AbsoluteSize.Y
-    if absX < 8 or absY < 8 then
-        target.Size = UDim2.fromOffset(FW * 4, FH * 4)
-        if CFG.Verbose then print(("[TARGET] size small (%dx%d) → forced %dx%d"):format(absX, absY, FW * 4, FH * 4)) end
+-- ★ ลบ UIAspectRatioConstraint เก่าของ gui2lua (สำคัญ!)
+for _, ch in ipairs(target:GetChildren()) do
+    if ch:IsA("UIAspectRatioConstraint") then
+        ch:Destroy()
+        if CFG.Verbose then print("[CLEAN] ลบ UIAspectRatioConstraint เก่า: " .. ch.Name) end
+    end
+    if ch.Name:sub(1, 12) == "__SpritePage" then
+        ch:Destroy()
     end
 end
 
--- ★ UIAspectRatioConstraint กันเบี้ยว
-local ar = target:FindFirstChild("__SpriteAR")
-if not ar then
-    ar = Instance.new("UIAspectRatioConstraint")
-    ar.Name = "__SpriteAR"
-    ar.AspectType = Enum.AspectType.FitWithinMaxSize
-    ar.DominantAxis = Enum.DominantAxis.Width
-    ar.Parent = target
+pcall(function() target.SliceCenter = Rect.new(0, 0, 0, 0) end)
+pcall(function() target.SliceScale = 1 end)
+pcall(function() target.ResampleMode = Enum.ResamplerMode.Pixelated end)
+pcall(function() target.ScaleType = Enum.ScaleType.Stretch end)
+
+pcall(function() target.BackgroundColor3 = Color3.fromRGB(35, 35, 50) end)
+pcall(function() target.BackgroundTransparency = 0.3 end)
+pcall(function() target.BorderSizePixel = 0 end)
+pcall(function() target.ImageColor3 = Color3.fromRGB(255, 255, 255) end)
+pcall(function() target.ImageTransparency = 0 end)
+pcall(function() target.Visible = true end)
+
+do
+    local absX = target.AbsoluteSize.X
+    local absY = target.AbsoluteSize.Y
+    if absX < 16 or absY < 16 then
+        target.Size = UDim2.fromOffset(math.max(FW * 4, 200), math.max(FH * 4, 200))
+        if CFG.Verbose then print(("[TARGET] size small (%dx%d) → %dx%d"):format(absX, absY, FW * 4, FH * 4)) end
+    end
 end
-ar.AspectRatio = FW / FH
 
--- ★ set ImageRectSize ก่อน
-pcall(function() target.ImageRectSize = CFG.FrameSize end)
-pcall(function() target.ImageRectOffset = Vector2.new(0, 0) end)
-
--- ── layers (multi-page) ──
-for _, ch in ipairs(target:GetChildren()) do
-    if ch.Name:sub(1, 12) == "__SpritePage" then ch:Destroy() end
-end
-
-local layers = {}
+-- ★★★ SET IMAGE FIRST ★★★
 if N == 1 then
     target.Image = assetIds[1]
-    pcall(function() target.ImageRectSize = CFG.FrameSize end)
-    pcall(function() target.ImageRectOffset = Vector2.new(0, 0) end)
+    if CFG.Verbose then print("[TARGET] set Image") end
 else
-    target.Image = ""
-    target.ImageTransparency = 1
-    for i = 1, N do
+    target.Image = assetIds[1]
+    for i = 2, N do
         local l = Instance.new("ImageLabel")
         l.Name = "__SpritePage" .. i
         l.Size = UDim2.fromScale(1, 1)
         l.Position = UDim2.fromScale(0, 0)
+        l.BackgroundTransparency = 1
+        l.BorderSizePixel = 0
         l.ZIndex = (target.ZIndex or 1) + i
-        l.ImageColor3 = target.ImageColor3 or Color3.new(1,1,1)
+        l.ImageColor3 = Color3.fromRGB(255, 255, 255)
         l.ImageTransparency = 1
         l.Image = assetIds[i]
-        forceStyle(l, true)
-        pcall(function() l.ImageRectSize = CFG.FrameSize end)
-        pcall(function() l.ImageRectOffset = Vector2.new(0, 0) end)
+        pcall(function() l.ResampleMode = Enum.ResamplerMode.Pixelated end)
+        pcall(function() l.ScaleType = Enum.ScaleType.Stretch end)
         l.Parent = target
-        layers[i] = l
     end
 end
 
+-- ★ รอ asset โหลดก่อน set RectSize (สำคัญมาก!)
+task.wait(0.5)
+
+-- ★ ตอนนี้ค่อย set RectSize/Offset ★
+target.ImageRectSize = CFG.FrameSize
+target.ImageRectOffset = Vector2.new(0, 0)
+
+-- PreloadAsync
+pcall(function() ContentProv:PreloadAsync({target}) end)
+task.wait(0.2)
+
+-- เพิ่ม AspectRatioConstraint ใหม่ (หลังลบของเก่า)
 do
-    local list = {}
-    if N == 1 then table.insert(list, target)
-    else for _, l in ipairs(layers) do table.insert(list, l) end end
-    pcall(function() ContentProv:PreloadAsync(list) end)
-    task.wait(0.25)
+    local ar = target:FindFirstChild("__SpriteAR")
+    if not ar then
+        ar = Instance.new("UIAspectRatioConstraint")
+        ar.Name = "__SpriteAR"
+        ar.Parent = target
+    end
+    ar.AspectRatio = FW / FH
+    ar.AspectType = Enum.AspectType.FitWithinMaxSize
+    ar.DominantAxis = Enum.DominantAxis.Width
 end
 
--- ── frame table ──
 local OFFS, PAGE = {}, {}
 for i = 0, TOTAL - 1 do
     local li = i % FPP
@@ -2067,7 +2031,14 @@ for i = 0, TOTAL - 1 do
     PAGE[i + 1] = math.floor(i / FPP) + 1
 end
 
--- ── engine ──
+local layers = {}
+for _, ch in ipairs(target:GetChildren()) do
+    if ch.Name:sub(1, 12) == "__SpritePage" then
+        local num = tonumber(ch.Name:sub(13)) or 0
+        layers[num] = ch
+    end
+end
+
 local idx, acc = 0, 0
 local curPage = 0
 local conn, playing, dead = nil, false, false
@@ -2076,20 +2047,25 @@ local finishedEvent = Instance.new("BindableEvent")
 local function apply()
     if dead or not target then return end
     local k = idx + 1
+    local off = OFFS[k]
     if N == 1 then
         target.ImageRectSize = CFG.FrameSize
-        target.ImageRectOffset = OFFS[k]
+        target.ImageRectOffset = off
     else
         local pg = PAGE[k]
-        local layer = layers[pg]
-        if layer then
-            layer.ImageRectSize = CFG.FrameSize
-            layer.ImageRectOffset = OFFS[k]
-            if pg ~= curPage then
-                layer.ImageTransparency = 0
-                if curPage >= 1 and layers[curPage] then layers[curPage].ImageTransparency = 1 end
-                curPage = pg
+        local layer = layers[pg] or target
+        layer.ImageRectSize = CFG.FrameSize
+        layer.ImageRectOffset = off
+        if pg ~= curPage then
+            if pg == 1 then
+                target.ImageTransparency = 0
+            else
+                target.ImageTransparency = 1
             end
+            for i, l in pairs(layers) do
+                l.ImageTransparency = (i == pg) and 0 or 1
+            end
+            curPage = pg
         end
     end
 end
@@ -2149,24 +2125,22 @@ task.wait(0.05)
 
 if CFG.Verbose then
     print(("[TARGET] %s (%s)"):format(target:GetFullName(), target.ClassName))
-    print(("[TARGET] Visible=%s  ImgTrans=%.2f  Size=%s  Abs=%dx%d"):format(tostring(target.Visible), target.ImageTransparency, tostring(target.Size), target.AbsoluteSize.X, target.AbsoluteSize.Y))
-    print(("[TARGET] ImageRectSize=%s  ScaleType=%s"):format(tostring(target.ImageRectSize), tostring(target.ScaleType)))
+    print(("[TARGET] Visible=%s ImgTrans=%.2f Size=%s Abs=%dx%d"):format(tostring(target.Visible), target.ImageTransparency, tostring(target.Size), target.AbsoluteSize.X, target.AbsoluteSize.Y))
+    print(("[TARGET] ImageRectSize=%s Offset=%s"):format(tostring(target.ImageRectSize), tostring(target.ImageRectOffset)))
     print(("[FRAME ] %dx%d px · grid %dx%d · %d เฟรม · %d หน้า · %d fps"):format(FW, FH, CFG.Columns, CFG.Rows, TOTAL, N, CFG.Fps))
 end
 
 if CFG.AutoPlay then API:Play() end
 _G.SpriteFromStudio = API
-print(("[ForExecutorFromStudio] ✓ %s (%s) · %d เฟรม · %d หน้า · %d fps · %dx%d"):format(target:GetFullName(), target.Name, TOTAL, N, CFG.Fps, FW, FH))
+print(("[ForExecutorFromStudio] ✓ %s · %d เฟรม · %d หน้า · %d fps · %dx%d"):format(target:GetFullName(), TOTAL, N, CFG.Fps, FW, FH))
 `;
 }
 
+/* FOR EXECUTOR v6.5 */
 function genForExecutor() {
   const c = getCfg();
-  return `--[[═══════════════════════════════════════════════════════════════════
-  ForExecutor.lua · v6 · FORCE STYLE · FrameSize validated
-═══════════════════════════════════════════════════════════════════════]]
+  return `--[[ ForExecutor.lua · v6.5 · Image first → wait → RectSize ]]
 
--- ★★★ แก้ตรงนี้ ★★★
 local URL = "https://raw.githubusercontent.com/USER/REPO/main/sprite_sheet.png"
 local CFG = {
     Columns    = ${state.cols},
@@ -2182,10 +2156,9 @@ local CFG = {
     Draggable  = true,
     Verbose    = true,
 }
--- ★★★ ไม่ต้องแก้ด้านล่าง ★★★
 
 if CFG.FrameSize.X < 2 or CFG.FrameSize.Y < 2 then
-    error("[ForExecutor] FrameSize ไม่ถูกต้อง (" .. CFG.FrameSize.X .. "×" .. CFG.FrameSize.Y .. ") — โหลด sprite sheet ใหม่ที่เว็บแล้ว export อีกครั้ง", 0)
+    error("[ForExecutor] FrameSize ไม่ถูกต้อง — export ใหม่", 0)
 end
 
 local Players = game:GetService("Players")
@@ -2196,20 +2169,20 @@ local player = Players.LocalPlayer
 local function http(url)
     do
         local ok, r = pcall(game.HttpGet, game, url, true)
-        if ok and type(r) == "string" and #r > 0 and not r:find("<!DOCTYPE html>") then
-            if CFG.Verbose then print(("[HTTP] ✓ game:HttpGet · %d bytes · magic=%02X%02X%02X%02X"):format(#r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0)) end
+        if ok and type(r) == "string" and #r > 500 and not r:find("<!DOCTYPE") then
+            if CFG.Verbose then print(("[HTTP] ✓ %d bytes · magic=%02X%02X%02X%02X"):format(#r, r:byte(1) or 0, r:byte(2) or 0, r:byte(3) or 0, r:byte(4) or 0)) end
             return r
         end
     end
     if type(request) == "function" then
         local ok, r = pcall(request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then return r.Body end
+        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
     end
     if type(http_request) == "function" then
         local ok, r = pcall(http_request, { Url = url, Method = "GET" })
-        if ok and r and r.Body and #r.Body > 0 and not r.Body:find("<!DOCTYPE html>") then return r.Body end
+        if ok and r and r.Body and #r.Body > 500 and not r.Body:find("<!DOCTYPE") then return r.Body end
     end
-    error("[ForExecutor] HTTP failed: " .. url, 0)
+    error("[ForExecutor] HTTP failed", 0)
 end
 
 local function djb2(s)
@@ -2232,11 +2205,11 @@ local function resolve(url)
         if CFG.Verbose then print(("[CACHE] wrote %s (%d bytes)"):format(fname, #body)) end
     end
     local id, lerr
-    for i = 1, 3 do
+    for i = 1, 5 do
         local ok, res = pcall(getcustomasset, fname)
         if ok and res then id = res; break end
         lerr = res
-        if i < 3 then task.wait(0.15 * i) end
+        task.wait(0.2 * i)
     end
     if not id then error("[ForExecutor] getcustomasset: "..tostring(lerr), 0) end
     return id
@@ -2268,34 +2241,27 @@ frame.Draggable = CFG.Draggable
 frame.Parent = gui
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
 
-local stroke = Instance.new("UIStroke")
-stroke.Thickness = 1.5
-stroke.Color = Color3.fromRGB(88, 166, 255)
-stroke.Transparency = 0.4
-stroke.Parent = frame
-
 local image = Instance.new("ImageLabel")
 image.Name = "videoframe"
 image.Size = UDim2.fromOffset(dispW, dispH)
-image.BackgroundTransparency = 1
+image.Position = UDim2.fromOffset(0, 0)
+image.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+image.BackgroundTransparency = 0.3
 image.BorderSizePixel = 0
 image.Image = assetId
-image.ImageRectSize = CFG.FrameSize
-image.ImageRectOffset = Vector2.new(0, 0)
+image.ImageColor3 = Color3.fromRGB(255, 255, 255)
 image.ImageTransparency = 0
 image.Visible = true
 image.ScaleType = Enum.ScaleType.Stretch
 pcall(function() image.ResampleMode = Enum.ResamplerMode.Pixelated end)
 image.Parent = frame
 
-local ar = Instance.new("UIAspectRatioConstraint")
-ar.Name = "__SpriteAR"
-ar.AspectRatio = FW / FH
-ar.AspectType = Enum.AspectType.FitWithinMaxSize
-ar.DominantAxis = Enum.DominantAxis.Width
-ar.Parent = image
+task.wait(0.5)
 
-pcall(function() ContentProv:PreloadAsync({ image }) end)
+image.ImageRectSize = CFG.FrameSize
+image.ImageRectOffset = Vector2.new(0, 0)
+
+pcall(function() ContentProv:PreloadAsync({image}) end)
 task.wait(0.1)
 
 local idx, acc, conn, playing, dead = 0, 0, nil, false, false
@@ -2373,7 +2339,7 @@ mkBtn("Close", function() API:Destroy() end)
 if CFG.AutoPlay then API:Play() end
 _G.SpriteExec = API
 _G.SpriteExecGui = gui
-print(("[ForExecutor] ✓ %d เฟรม · %d fps · image %dx%d → screen %dx%d"):format(CFG.FrameCount, CFG.Fps, FW, FH, dispW, dispH))
+print(("[ForExecutor] ✓ %d เฟรม · %d fps · %dx%d → %dx%d"):format(CFG.FrameCount, CFG.Fps, FW, FH, dispW, dispH))
 `;
 }
 
@@ -2424,6 +2390,7 @@ function VideoPlayer:_setup()
 \tt.ImageTransparency = 0
 \tt.BackgroundTransparency = 1
 \tt.Image = self.SheetId
+\ttask.wait(0.3)
 \tt.ImageRectSize = self.FrameSize
 \tt.ImageRectOffset = Vector2.new(0, 0)
 \tpcall(function() t.ResampleMode = Enum.ResamplerMode.Pixelated end)
@@ -2480,25 +2447,25 @@ function genReadme(ext, fmt) {
 ═══ ข้อมูล Sheet ═══
   จำนวนหน้า: ${L.pages}
   ขนาดต่อหน้า: ${c.sheetW} × ${c.sheetH} px
-  ขนาด 1 เฟรม: ${c.fw} × ${c.fh} px   ★ ตรวจแล้ว
+  ขนาด 1 เฟรม: ${c.fw} × ${c.fh} px
   ตารางต่อหน้า: ${L.pc} × ${L.pr} (${L.fpp} เฟรม/หน้า)
   จำนวนเฟรมรวม: ${state.count}
   ลำดับ: ${state.order}
   FPS: ${c.fps}
   รูปแบบ: ${fmt}
 
-═══ ★★★ แก้บั๊ก FrameSize 1x1 ★★★ ═══
-  สาเหตุ: กด export/copy ตอนยังไม่ได้โหลดไฟล์ (sourceType=none)
-  แก้: ตรวจใน getCfg() — ถ้า FrameSize < 2×2 → throw error ทันที
-  ผลลัพธ์: ลบปัญหา LUA มี FrameSize = Vector2.new(1,1) แล้วเล่นไม่เป็นอนิเมชั่น
+═══ ★★★ v5.0 แก้ทำไมภาพดำ ★★★ ═══
+  1. ลบ UIAspectRatioConstraint เก่าของ gui2lua (ทับของเรา)
+  2. ลำดับ: set Image → wait 0.5s → set ImageRectSize/Offset
+     (ถ้าตั้ง RectSize ก่อน Image → reset 0,0 → ดำ)
+  3. BackgroundColor3 + BgTransparency=0.3 (เห็นสี ไม่ดำ)
+  4. SliceCenter/SliceScale = default
+  5. PreloadAsync รอ asset
+  6. Visible=true, ImageTransparency=0
 
-═══ URL GitHub raw ═══
+═══ URL ═══
   ✓ https://raw.githubusercontent.com/USER/REPO/main/pf.png
-  ✗ https://githubusercontent.com/...  (404)
-  ✗ .../COMMIT_SHA/pf.png (ถ้า commit นั้นไม่มีไฟล์)
-
-═══ Cache ═══
-  workspace/SpriteLib/from_studio/<hash8>
+  ✗ https://githubusercontent.com/...
 
 ═══ API ═══
   _G.SpriteFromStudio:Pause() / :Play() / :SetFrame(n) / :SetFps(n)
