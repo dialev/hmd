@@ -374,9 +374,9 @@
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">ForExecutorFromStudio.lua</div>
-            <div class="fi-desc">★ v3.3 · วาง LocalScript ใน Studio · gui2lua → executor · รองรับไฟล์ใหญ่ (หลายหน้า)</div>
+            <div class="fi-desc">★ v3.4 · วาง LocalScript ใน Studio · gui2lua → executor · รองรับหลายหน้า</div>
           </div>
-          <span class="fi-size">~7 KB</span>
+          <span class="fi-size">~8 KB</span>
           <button class="fi-copy" data-copy="fromstudio">📋</button>
         </div>
 
@@ -384,7 +384,7 @@
           <input type="checkbox" checked>
           <div class="fi-info">
             <div class="fi-name">ForExecutor.lua</div>
-            <div class="fi-desc">★ v2 · loadstring ใน Delta/Synapse → GUI + ดาวน์โหลด + เล่นทันที</div>
+            <div class="fi-desc">★ v3 · loadstring ใน Delta/Synapse → GUI + ดาวน์โหลด + เล่นทันที</div>
           </div>
           <span class="fi-size">~5 KB</span>
           <button class="fi-copy" data-copy="executor">📋</button>
@@ -1620,15 +1620,15 @@ local IS_EXEC = _has("writefile") and _has("readfile") and _has("getcustomasset"
 
 local function _httpGet(url)
     if _has("request") then
-        local ok, r = pcall(request, { Url = url, Method = "GET" })
+        local ok, r = pcall(request, { Url = url, Method = "GET", Headers = { ["Accept-Encoding"] = "identity" } })
         if ok and r and r.Body and #r.Body > 0 then return r.Body end
     end
     if _has("http_request") then
-        local ok, r = pcall(http_request, { Url = url, Method = "GET" })
+        local ok, r = pcall(http_request, { Url = url, Method = "GET", Headers = { ["Accept-Encoding"] = "identity" } })
         if ok and r and r.Body and #r.Body > 0 then return r.Body end
     end
     if _G.syn and _G.syn.request then
-        local ok, r = pcall(_G.syn.request, { Url = url, Method = "GET" })
+        local ok, r = pcall(_G.syn.request, { Url = url, Method = "GET", Headers = { ["Accept-Encoding"] = "identity" } })
         if ok and r and r.Body and #r.Body > 0 then return r.Body end
     end
     local ok, r = pcall(game.HttpGet, game, url, true)
@@ -1642,7 +1642,8 @@ local function _hash(s)
     return string.format("%08x", h)
 end
 local function _extOf(url)
-    local e = (url:match("^[^?]*") or url):match("%.([%w]+)$")
+    local p = url:match("^[^?#]*") or url
+    local e = p:match("%.([%w]+)$")
     if not e then return ".png" end
     e = e:lower()
     if e == "jpg" or e == "jpeg" then return ".jpg" end
@@ -1768,7 +1769,10 @@ function Storage:add(name, url, settings)
     end
     local ok, body = pcall(_httpGet, url)
     if not ok or not body or #body == 0 then return false, "download failed" end
-    local fname = _hash(url .. "|" .. name) .. _extOf(url)
+    if #body >= 2 and body:byte(1) == 0x1F and body:byte(2) == 0x8B then
+        return false, "gzip response (โฮสต์ไม่สนใจ Accept-Encoding)"
+    end
+    local fname = _hash(url) .. _extOf(url)
     local fpath = self.path .. "/" .. fname
     local wok = pcall(writefile, fpath, body)
     if not wok then return false, "write failed" end
@@ -1916,7 +1920,7 @@ end
 return SpriteLib`;
 }
 
-/* FOR EXECUTOR FROM STUDIO — v3.3 (FIXED: real download + write) */
+/* FOR EXECUTOR FROM STUDIO v3.4 */
 function genForExecutorFromStudio() {
   const c = getCfg();
   const L = c.L;
@@ -1927,37 +1931,21 @@ function genForExecutorFromStudio() {
     urlLines.push('    "https://i.imgur.com/xxxxxxxx.' + ext + '",   -- ← หน้า ' + (p + 1) + ' : ' + nm);
   }
   return `-- ═══════════════════════════════════════════════════════════════════════
---  ForExecutorFromStudio.lua · v3.3 (script.Parent EDITION · LARGE ANIMATION)
+--  ForExecutorFromStudio.lua · v3.4 (FIXED: gzip + parent + filename)
 -- ═══════════════════════════════════════════════════════════════════════
---  ▶ วางไว้: LocalScript "ใต้ ImageLabel" (หรือ ImageButton) ใน Studio
---    script.Parent = ImageLabel นั่นแหละที่มันจะเอามาทำอนิเมชั่น
---
---  ▶ ใน STUDIO: Studio ไม่มี writefile/getcustomasset → สคริปต์ warn
---    1 บรรทัดแล้ว return เงียบ ๆ (ตั้งใจให้เป็นแบบนี้ ช่างมัน Studio)
---
---  ▶ gui2lua : ทำ GUI + ใส่ LocalScript ใต้ ImageLabel ให้เรียบร้อย
---    → แปลงทั้ง ScreenGui เป็น .lua
---    → เอา .lua ไป Execute บน executor (Delta / Fluxus / Solara ...)
---    → มันเช็ค script.Parent เป็น ImageLabel/ImageButton แล้วเล่นเลย
---
---  ★ v3.3 ใหม่:
---    • ลบการตรวจ magic-bytes ทิ้ง → ไฟล์รูปคือไฟล์รูป โหลดยังไงก็ได้
---    • ลอง HTTP 5 วิธี (request / http_request / syn.request / HttpGet / HttpGetAsync)
---    • ยืนยัน writefile สำเร็จ + ไฟล์มีจริงก่อนค่อย getcustomasset
---    • getcustomasset ลองซ้ำ 3 ครั้ง (บาง executor ต้องรอนิด)
---    • error message บอกชัดว่าล้มขั้นตอนไหน + URL ไหน
---
---  ★ เว็ปโฮสต์รูป sprite sheet (เอา direct link มาใส่ URLS ข้างล่าง) ★
---    • https://catbox.moe                 ← แนะนำสุด อัปโหลดง่าย link ตรง
---    • https://imgur.com                  ← คลิกขวารูป → Copy image address
---    • https://postimages.org
---    • https://raw.githubusercontent.com  ← อัป .png ขึ้น GitHub แล้วกด Raw
+--  ★ v3.4 ใหม่ (แก้ 5 จุด):
+--    [1] HTTP บังคับ Accept-Encoding: identity → กัน gzip กลับมาเป็นไฟล์พัง
+--    [2] ถ้า response เริ่ม 1F 8B (gzip) → throw ทันที ไม่เขียนไฟล์พัง
+--    [3] ถ้า response เป็น HTML → throw (น่าจะ 403/404)
+--    [4] หลัง writefile → readfile กลับมาเทียบขนาด
+--    [5] script.Parent ถ้าไม่ใช่ ImageLabel → หาลูกให้อัตโนมัติ
+--    [6] ชื่อไฟล์ cache = djb2(url) ล้วน (ไม่มี #url ต่อท้าย กันชื่อเพี้ยน)
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- ╔═══════════════════════════════════════════════════════════════════╗
 -- ║  ★★★ แก้เฉพาะในกรอบนี้ ★★★                                        ║
 -- ╚═══════════════════════════════════════════════════════════════════╝
-local URLS = {   -- direct link รูป sheet เรียงตามหน้า 1 → ${L.pages}
+local URLS = {
 ${urlLines.join("\n")}
 }
 
@@ -1975,6 +1963,7 @@ local CFG = {
     Refresh       = false,
     Retries       = 3,
     Timeout       = 180,
+    Verbose       = true,
 }
 -- ╔═══════════════════════════════════════════════════════════════════╗
 -- ║  ★★★ อย่าแตะอะไรด้านล่างนี้ ★★★                                    ║
@@ -1986,21 +1975,17 @@ do
         for i, u in ipairs(URLS) do
             assert(type(u) == "string" and (u:match("^https?://") or u:match("^rbxassetid://") or u:match("^rbxasset://")),
                 ("URLS[%d] ต้องเป็น http(s) link"):format(i))
-            assert(u:find("xxxxxxxx") == nil, ("URLS[%d] ลืมแก้ URL! ยังเป็นค่าตัวอย่างอยู่"):format(i))
+            assert(u:find("xxxxxxxx") == nil, ("URLS[%d] ลืมแก้ URL!"):format(i))
         end
         assert(CFG.Columns >= 1 and CFG.Rows >= 1, "Columns/Rows ต้อง >= 1")
-        assert(CFG.FramesPerPage == CFG.Columns * CFG.Rows, "FramesPerPage ต้องเท่ากับ Columns × Rows")
+        assert(CFG.FramesPerPage == CFG.Columns * CFG.Rows, "FramesPerPage ต้อง = Columns × Rows")
         assert(CFG.FrameCount >= 1, "FrameCount ต้อง >= 1")
-        assert(CFG.FrameCount <= CFG.FramesPerPage * #URLS,
-            ("FrameCount (%d) มากกว่าที่ %d หน้ารองรับ (%d) — URLS ไม่ครบทุกหน้า?"):format(
-                CFG.FrameCount, #URLS, CFG.FramesPerPage * #URLS))
-        assert(CFG.FrameCount > CFG.FramesPerPage * (#URLS - 1),
-            "จำนวน URLS มากเกินจำนวนหน้าที่ต้องใช้ — ลบลิงก์ที่เกินออก")
-        assert(CFG.FrameSize.X >= 1 and CFG.FrameSize.Y >= 1, "FrameSize ต้อง >= 1px")
-        assert(CFG.Order == "row" or CFG.Order == "col", 'Order ต้องเป็น "row" หรือ "col"')
-        assert(CFG.Fps >= 1 and CFG.Fps <= 240, "Fps ต้องอยู่ระหว่าง 1-240")
+        assert(CFG.FrameCount <= CFG.FramesPerPage * #URLS, "FrameCount > หน้าที่มี")
+        assert(CFG.FrameCount > CFG.FramesPerPage * (#URLS - 1), "URLS เกิน")
+        assert(CFG.Order == "row" or CFG.Order == "col", "Order ผิด")
+        assert(CFG.Fps >= 1 and CFG.Fps <= 240, "Fps ผิด")
     end)
-    if not ok then error("[ForExecutorFromStudio] CONFIG ผิด: " .. tostring(why), 0) end
+    if not ok then error("[ForExecutorFromStudio] CONFIG: " .. tostring(why), 0) end
     CFG.FrameSize = Vector2.new(math.floor(CFG.FrameSize.X), math.floor(CFG.FrameSize.Y))
 end
 
@@ -2009,8 +1994,7 @@ do
         and (type(getcustomasset) == "function")
         and (type(makefolder) == "function")
     if not exec then
-        warn("[ForExecutorFromStudio] Studio mode — อนิเมชั่นไม่เล่นตรงนี้ (ปกติ) "
-            .. "→ gui2lua ออกไป Execute บน executor แล้วจะทำงานเต็มระบบ ✓")
+        warn("[ForExecutorFromStudio] Studio mode — ปกติ → gui2lua ไป Execute บน executor")
         return
     end
 end
@@ -2018,129 +2002,175 @@ end
 local RunService  = game:GetService("RunService")
 local ContentProv = game:GetService("ContentProvider")
 
+-- ── TARGET ───────────────────────────────────────────────────────────
 local target
 do
     local parent = (typeof(script) == "Instance") and script.Parent or nil
-    if parent and (parent:IsA("ImageLabel") or parent:IsA("ImageButton")) then
-        target = parent
-    else
-        error("[ForExecutorFromStudio] script.Parent ต้องเป็น ImageLabel/ImageButton"
-            .. " → ตรวจว่า gui2lua ที่ใช้รองรับ LocalScript ไหม"
-            .. " (แนะนำปลั๊กอิน GUI2Lua ของ MaximumADHD ใน Studio)", 0)
+    local cand = nil
+    if parent then
+        if parent:IsA("ImageLabel") or parent:IsA("ImageButton") then
+            cand = parent
+        else
+            for _, d in ipairs(parent:GetDescendants()) do
+                if d:IsA("ImageLabel") or d:IsA("ImageButton") then
+                    cand = d; break
+                end
+            end
+        end
+    end
+    if not cand then
+        error("[ForExecutorFromStudio] ไม่เจอ ImageLabel/ImageButton ใต้ " ..
+            (parent and parent:GetFullName() or "script.Parent=nil"), 0)
+    end
+    target = cand
+    if CFG.Verbose then
+        warn("[ForExecutorFromStudio] target = " .. cand:GetFullName() ..
+            " (" .. cand.ClassName .. ")")
     end
 end
 
--- ─────────────────────────────────────────────────────────────────────
---  HTTP : ลอง 5 วิธี · ไม่ตรวจ magic bytes · log error ละเอียด
--- ─────────────────────────────────────────────────────────────────────
-local function _tryNamed(name, fn)
-    local ok, res = pcall(fn)
-    if ok and type(res) == "string" and #res > 0 then
-        return res
-    end
-    return nil, name .. ": " .. (ok and ("empty (" .. tostring(#res or 0) .. "B)") or tostring(res))
+-- ── HTTP ─────────────────────────────────────────────────────────────
+local function isGzip(s)
+    return type(s) == "string" and #s >= 2
+        and s:byte(1) == 0x1F and s:byte(2) == 0x8B
+end
+local function isHtml(s)
+    if type(s) ~= "string" or #s < 20 then return false end
+    local head = s:sub(1, 200):lower()
+    return head:find("<!doctype") ~= nil or head:find("<html") ~= nil
 end
 
 local function httpGet(url)
     local lastErr = "unknown"
+    local HEADERS = {
+        ["Accept-Encoding"] = "identity",
+        ["Accept"]          = "image/*,*/*;q=0.8",
+        ["User-Agent"]      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Roblox/Executor",
+    }
+
+    local function validate(res, name)
+        if type(res) ~= "string" or #res == 0 then
+            return nil, name .. ": empty"
+        end
+        if isGzip(res) then
+            return nil, name .. ": gzip (เซิร์ฟเวอร์ไม่สนใจ Accept-Encoding: identity)"
+        end
+        if isHtml(res) then
+            return nil, name .. ": HTML response (403/404?)"
+        end
+        if #res < 100 then
+            return nil, name .. ": เล็กเกิน (" .. #res .. "B)"
+        end
+        return res
+    end
 
     local methods = {
         { "request", function()
-            if type(request) ~= "function" then error("not available") end
-            local r = request({ Url = url, Method = "GET" })
-            if r and r.Body then return r.Body end
-            error("no body")
+            if type(request) ~= "function" then error("n/a") end
+            local r = request({ Url = url, Method = "GET", Headers = HEADERS })
+            if not r then error("no response") end
+            if r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
+                error("HTTP " .. tostring(r.StatusCode))
+            end
+            return r.Body
         end },
         { "http_request", function()
-            if type(http_request) ~= "function" then error("not available") end
-            local r = http_request({ Url = url, Method = "GET" })
-            if r and r.Body then return r.Body end
-            error("no body")
+            if type(http_request) ~= "function" then error("n/a") end
+            local r = http_request({ Url = url, Method = "GET", Headers = HEADERS })
+            if not r then error("no response") end
+            if r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
+                error("HTTP " .. tostring(r.StatusCode))
+            end
+            return r.Body
         end },
         { "syn.request", function()
-            if type(syn) ~= "table" or not syn.request then error("not available") end
-            local r = syn.request({ Url = url, Method = "GET" })
-            if r and r.Body then return r.Body end
-            error("no body")
+            if type(syn) ~= "table" or type(syn.request) ~= "function" then error("n/a") end
+            local r = syn.request({ Url = url, Method = "GET", Headers = HEADERS })
+            if not r then error("no response") end
+            if r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
+                error("HTTP " .. tostring(r.StatusCode))
+            end
+            return r.Body
         end },
         { "game:HttpGet", function()
             return game:HttpGet(url, true)
-        end },
-        { "game:HttpGetAsync", function()
-            return game:HttpGetAsync(url)
         end },
     }
 
     local tries = math.max(1, tonumber(CFG.Retries) or 3)
     for attempt = 1, tries do
         for _, m in ipairs(methods) do
-            local body, err = _tryNamed(m[1], m[2])
-            if body then return body end
-            lastErr = err
+            local ok, res = pcall(m[2])
+            if ok then
+                local body, err = validate(res, m[1])
+                if body then
+                    if CFG.Verbose then
+                        print(("[HTTP] ✓ %s · %d bytes · magic=%02X%02X%02X%02X"):format(
+                            m[1], #body, body:byte(1) or 0, body:byte(2) or 0,
+                            body:byte(3) or 0, body:byte(4) or 0))
+                    end
+                    return body
+                end
+                lastErr = err
+            else
+                lastErr = m[1] .. ": " .. tostring(res)
+            end
         end
         if attempt < tries then task.wait(0.4 * attempt) end
     end
-    error("HTTP GET failed (" .. url .. "): " .. tostring(lastErr), 0)
+    error("HTTP GET failed (" .. url .. ")\\n  สาเหตุ: " .. tostring(lastErr), 0)
 end
 
--- ─────────────────────────────────────────────────────────────────────
---  CACHE + WRITE + getcustomasset
--- ─────────────────────────────────────────────────────────────────────
+-- ── hash filename ─────────────────────────────────────────────────────
 local function djb2(s)
     local h = 5381
     for i = 1, #s do h = (h * 33 + s:byte(i)) % 4294967296 end
     return string.format("%08x", h)
 end
+local function extOf(url)
+    local pathOnly = url:match("^[^?#]*") or url
+    local e = pathOnly:match("%.([%w]+)$")
+    if not e then return ".png" end
+    e = e:lower()
+    if e == "jpg" or e == "jpeg" then return ".jpg" end
+    if e == "png" or e == "gif" or e == "webp" or e == "bmp" then return "." .. e end
+    return ".png"
+end
 
 local function resolveAsset(url)
-    if url:match("^rbxassetid://") or url:match("^rbxasset://") then
-        return url
-    end
+    if url:match("^rbxassetid://") or url:match("^rbxasset://") then return url end
 
     local root = "SpriteLib"
     local dir  = root .. "/" .. tostring(CFG.Folder or "from_studio")
     if not isfolder(root) then pcall(makefolder, root) end
     if not isfolder(dir)  then pcall(makefolder, dir)  end
 
-    -- เดา extension จาก URL (ถ้าไม่มี ใช้ .png)
-    local ext = ".png"
-    local pathOnly = url:match("^[^?#]*") or url
-    local uext = pathOnly:match("%.([%w]+)$")
-    if uext then
-        uext = uext:lower()
-        if uext == "jpg" or uext == "jpeg" then ext = ".jpg"
-        elseif uext == "png" or uext == "gif" or uext == "webp" or uext == "bmp" then
-            ext = "." .. uext
-        end
-    end
-
-    local fname = ("%s/%s_%d%s"):format(dir, djb2(url), #url, ext)
+    local fname = dir .. "/" .. djb2(url) .. extOf(url)
 
     if CFG.Refresh or not isfile(fname) then
         local body = httpGet(url)
-        if type(body) ~= "string" or #body == 0 then
-            error("ได้ข้อมูลว่างเปล่าจาก: " .. url, 0)
-        end
         local ok, werr = pcall(writefile, fname, body)
-        if not ok then
-            error("writefile ล้มเหลว (" .. fname .. "): " .. tostring(werr), 0)
+        if not ok then error("writefile: " .. tostring(werr), 0) end
+        if not isfile(fname) then error("writefile ok แต่ isfile=false: " .. fname, 0) end
+        local onDisk = #readfile(fname)
+        if onDisk ~= #body then
+            error(("ไฟล์เขียนไม่ครบ! disk=%d body=%d"):format(onDisk, #body), 0)
         end
-        if not isfile(fname) then
-            error("เขียนไฟล์แล้วแต่หาไม่เจอ: " .. fname, 0)
+        if CFG.Verbose then
+            print(("[CACHE] wrote %s (%d bytes)"):format(fname, #body))
         end
+    elseif CFG.Verbose then
+        print("[CACHE] hit: " .. fname)
     end
 
-    local id
-    local lastIdErr
+    local id, lerr
     for i = 1, 3 do
         local ok, res = pcall(getcustomasset, fname)
         if ok and res then id = res; break end
-        lastIdErr = res
+        lerr = res
         if i < 3 then task.wait(0.15 * i) end
     end
-    if not id then
-        error("getcustomasset ล้มเหลว (" .. fname .. "): " .. tostring(lastIdErr), 0)
-    end
+    if not id then error("getcustomasset: " .. tostring(lerr), 0) end
     return id
 end
 
@@ -2157,20 +2187,20 @@ do
     local t0 = os.clock()
     while pending > 0 do
         if os.clock() - t0 > CFG.Timeout then
-            error("[ForExecutorFromStudio] ดาวน์โหลดนานเกิน " .. CFG.Timeout .. " วินาที", 0)
+            error("[ForExecutorFromStudio] timeout " .. CFG.Timeout .. "s", 0)
         end
         task.wait()
     end
 end
 for i = 1, N do
     if not assetIds[i] then
-        error(("[ForExecutorFromStudio] หน้า %d โหลดไม่สำเร็จ: %s"):format(i, tostring(errs[i])), 0)
+        error(("[ForExecutorFromStudio] หน้า %d ล้ม: %s"):format(i, tostring(errs[i])), 0)
     end
 end
 
-local FW, FH   = CFG.FrameSize.X, CFG.FrameSize.Y
-local TOTAL    = CFG.FrameCount
-local FPP      = CFG.FramesPerPage
+local FW, FH = CFG.FrameSize.X, CFG.FrameSize.Y
+local TOTAL  = CFG.FrameCount
+local FPP    = CFG.FramesPerPage
 
 local function styleImage(img)
     img.ImageRectSize = CFG.FrameSize
@@ -2212,11 +2242,9 @@ for i = 0, TOTAL - 1 do
     local li = i % FPP
     local col, row
     if CFG.Order == "col" then
-        col = math.floor(li / CFG.Rows)
-        row = li % CFG.Rows
+        col = math.floor(li / CFG.Rows); row = li % CFG.Rows
     else
-        col = li % CFG.Columns
-        row = math.floor(li / CFG.Columns)
+        col = li % CFG.Columns; row = math.floor(li / CFG.Columns)
     end
     OFFS[i + 1] = Vector2.new(math.floor(col * FW), math.floor(row * FH))
     PAGE[i + 1] = math.floor(i / FPP) + 1
@@ -2226,7 +2254,6 @@ local idx, acc = 0, 0
 local curPage = 0
 local conn, playing, dead = nil, false, false
 local finishedEvent = Instance.new("BindableEvent")
-local OnFinish = finishedEvent.Event
 
 local function apply()
     if dead or not target then return end
@@ -2248,24 +2275,18 @@ end
 local function stepOnce()
     idx = idx + 1
     if idx >= TOTAL then
-        if CFG.Loop then
-            idx = 0
-        else
-            idx = TOTAL - 1
-            finishedEvent:Fire()
-            return false
-        end
+        if CFG.Loop then idx = 0
+        else idx = TOTAL - 1; finishedEvent:Fire(); return false end
     end
     return true
 end
 
 local API = {}
-API.OnFinish = OnFinish
+API.OnFinish = finishedEvent.Event
 
 function API:Play()
     if playing or dead then return end
-    playing = true
-    acc = 0
+    playing = true; acc = 0
     conn = RunService.RenderStepped:Connect(function(dt)
         if dead then return end
         dt = math.min(dt, 0.25)
@@ -2274,8 +2295,7 @@ function API:Play()
             local advanced = false
             local guard = 0
             while acc >= 1 and guard < 512 do
-                guard = guard + 1
-                acc = acc - 1
+                guard = guard + 1; acc = acc - 1
                 if not stepOnce() then break end
                 advanced = true
             end
@@ -2284,23 +2304,12 @@ function API:Play()
         end
     end)
 end
-
 function API:Pause()
     playing = false
     if conn then conn:Disconnect(); conn = nil end
 end
-
-function API:Stop()
-    self:Pause()
-    idx = 0; acc = 0
-    apply()
-end
-
-function API:SetFrame(i)
-    idx = math.clamp(math.floor(i), 0, TOTAL - 1)
-    apply()
-end
-
+function API:Stop() self:Pause(); idx = 0; acc = 0; apply() end
+function API:SetFrame(i) idx = math.clamp(math.floor(i), 0, TOTAL - 1); apply() end
 function API:GetFrame() return idx end
 function API:GetFrameCount() return TOTAL end
 function API:GetPage() return PAGE[idx + 1] end
@@ -2310,10 +2319,8 @@ function API:GetFps() return CFG.Fps end
 function API:SetLoop(b) CFG.Loop = not not b end
 function API:IsPlaying() return playing end
 function API:Toggle() if playing then self:Pause() else self:Play() end end
-
 function API:Destroy()
-    self:Pause()
-    dead = true
+    self:Pause(); dead = true
     for _, l in ipairs(layers) do l:Destroy() end
     finishedEvent:Destroy()
     if _G.SpriteFromStudio == API then _G.SpriteFromStudio = nil end
@@ -2323,20 +2330,17 @@ apply()
 if CFG.AutoPlay then API:Play() end
 
 _G.SpriteFromStudio = API
-print(("[ForExecutorFromStudio] ✓ parent=%s · %d เฟรม · %d หน้า · %d fps · frame %d×%d · order=%s"):format(
-    target:GetFullName(), TOTAL, N, CFG.Fps, FW, FH, CFG.Order))
+print(("[ForExecutorFromStudio] ✓ %s · %d เฟรม · %d หน้า · %d fps · %dx%d"):format(
+    target:GetFullName(), TOTAL, N, CFG.Fps, FW, FH))
 `;
 }
 
-/* FOR EXECUTOR — v2 (FIXED) */
+/* FOR EXECUTOR v3 */
 function genForExecutor() {
   const c = getCfg();
   return `--[[═══════════════════════════════════════════════════════════════════
-  ForExecutor.lua · v2 · gui2lua-style
-  ─────────────────────────────────────────────────────────────────
-  ▶ วิธีใช้: loadstring(game:HttpGet("URL/ForExecutor.lua"))()
-  ▶ มันจะ: ดาวน์โหลด → cache → สร้าง GUI → เล่นเอง
-═══════════════════════════════════════════════════════════════════]]
+  ForExecutor.lua · v3 · FIXED: gzip + filename
+═══════════════════════════════════════════════════════════════════════]]
 
 -- ★★★ แก้ตรงนี้ ★★★
 local URL = "https://i.imgur.com/xxxxxxxx.png"
@@ -2353,6 +2357,7 @@ local CFG = {
     Storage    = "default",
     Draggable  = true,
     Retries    = 3,
+    Verbose    = true,
 }
 -- ★★★ ไม่ต้องแก้ด้านล่าง ★★★
 
@@ -2360,56 +2365,90 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
-local function _tryNamed(name, fn)
-    local ok, res = pcall(fn)
-    if ok and type(res) == "string" and #res > 0 then return res end
-    return nil, name .. ": " .. (ok and "empty" or tostring(res))
+local function isGzip(s)
+    return type(s) == "string" and #s >= 2 and s:byte(1) == 0x1F and s:byte(2) == 0x8B
+end
+local function isHtml(s)
+    if type(s) ~= "string" or #s < 20 then return false end
+    local h = s:sub(1, 200):lower()
+    return h:find("<!doctype") or h:find("<html")
 end
 
 local function http(url)
     local lastErr = "unknown"
+    local HEADERS = {
+        ["Accept-Encoding"] = "identity",
+        ["Accept"]          = "image/*,*/*;q=0.8",
+        ["User-Agent"]      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Roblox/Executor",
+    }
+    local function validate(res, name)
+        if type(res) ~= "string" or #res == 0 then return nil, name..": empty" end
+        if isGzip(res) then return nil, name..": gzip" end
+        if isHtml(res) then return nil, name..": HTML (403/404?)" end
+        if #res < 100 then return nil, name..": เล็กเกิน ("..#res.."B)" end
+        return res
+    end
     local methods = {
         { "request", function()
-            if type(request) ~= "function" then error("not available") end
-            local r = request({ Url = url, Method = "GET" })
-            if r and r.Body then return r.Body end
-            error("no body")
+            if type(request) ~= "function" then error("n/a") end
+            local r = request({ Url = url, Method = "GET", Headers = HEADERS })
+            if r and r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
+                error("HTTP "..r.StatusCode) end
+            return r and r.Body
         end },
         { "http_request", function()
-            if type(http_request) ~= "function" then error("not available") end
-            local r = http_request({ Url = url, Method = "GET" })
-            if r and r.Body then return r.Body end
-            error("no body")
+            if type(http_request) ~= "function" then error("n/a") end
+            local r = http_request({ Url = url, Method = "GET", Headers = HEADERS })
+            if r and r.StatusCode and (r.StatusCode < 200 or r.StatusCode >= 300) then
+                error("HTTP "..r.StatusCode) end
+            return r and r.Body
         end },
         { "syn.request", function()
-            if type(syn) ~= "table" or not syn.request then error("not available") end
-            local r = syn.request({ Url = url, Method = "GET" })
-            if r and r.Body then return r.Body end
-            error("no body")
+            if type(syn) ~= "table" or type(syn.request) ~= "function" then error("n/a") end
+            local r = syn.request({ Url = url, Method = "GET", Headers = HEADERS })
+            return r and r.Body
         end },
         { "game:HttpGet", function()
             return game:HttpGet(url, true)
-        end },
-        { "game:HttpGetAsync", function()
-            return game:HttpGetAsync(url)
         end },
     }
     local tries = math.max(1, tonumber(CFG.Retries) or 3)
     for attempt = 1, tries do
         for _, m in ipairs(methods) do
-            local body, err = _tryNamed(m[1], m[2])
-            if body then return body end
-            lastErr = err
+            local ok, res = pcall(m[2])
+            if ok then
+                local body, err = validate(res, m[1])
+                if body then
+                    if CFG.Verbose then
+                        print(("[HTTP] ✓ %s · %d bytes · magic=%02X%02X%02X%02X"):format(
+                            m[1], #body, body:byte(1) or 0, body:byte(2) or 0,
+                            body:byte(3) or 0, body:byte(4) or 0))
+                    end
+                    return body
+                end
+                lastErr = err
+            else
+                lastErr = m[1]..": "..tostring(res)
+            end
         end
         if attempt < tries then task.wait(0.4 * attempt) end
     end
-    error("[ForExecutor] HTTP GET failed: " .. tostring(lastErr), 0)
+    error("[ForExecutor] HTTP fail: "..tostring(lastErr), 0)
 end
 
 local function djb2(s)
     local h = 5381
     for i = 1, #s do h = (h * 33 + s:byte(i)) % 4294967296 end
     return string.format("%08x", h)
+end
+local function extOf(url)
+    local p = url:match("^[^?#]*") or url
+    local e = p:match("%.([%w]+)$")
+    if not e then return ".png" end
+    e = e:lower()
+    if e == "jpg" or e == "jpeg" then return ".jpg" end
+    if e == "png" or e == "gif" or e == "webp" or e == "bmp" then return "."..e end
+    return ".png"
 end
 
 local function resolve(url)
@@ -2419,27 +2458,16 @@ local function resolve(url)
     if not isfolder(root) then pcall(makefolder, root) end
     if not isfolder(dir) then pcall(makefolder, dir) end
 
-    local ext = ".png"
-    local pathOnly = url:match("^[^?#]*") or url
-    local uext = pathOnly:match("%.([%w]+)$")
-    if uext then
-        uext = uext:lower()
-        if uext == "jpg" or uext == "jpeg" then ext = ".jpg"
-        elseif uext == "png" or uext == "gif" or uext == "webp" or uext == "bmp" then
-            ext = "." .. uext
-        end
-    end
-
-    local fname = dir .. "/" .. djb2(url) .. "_" .. #url .. ext
+    local fname = dir .. "/" .. djb2(url) .. extOf(url)
     if not isfile(fname) then
         local body = http(url)
-        if type(body) ~= "string" or #body == 0 then
-            error("[ForExecutor] ได้ข้อมูลว่างเปล่า", 0)
-        end
         local ok, werr = pcall(writefile, fname, body)
-        if not ok then
-            error("[ForExecutor] writefile ล้มเหลว: " .. tostring(werr), 0)
+        if not ok then error("[ForExecutor] writefile: "..tostring(werr), 0) end
+        local onDisk = #readfile(fname)
+        if onDisk ~= #body then
+            error(("[ForExecutor] ไฟล์เขียนไม่ครบ! disk=%d body=%d"):format(onDisk, #body), 0)
         end
+        if CFG.Verbose then print(("[CACHE] wrote %s (%d bytes)"):format(fname, #body)) end
     end
     local id, lerr
     for i = 1, 3 do
@@ -2448,7 +2476,7 @@ local function resolve(url)
         lerr = res
         if i < 3 then task.wait(0.15 * i) end
     end
-    if not id then error("[ForExecutor] getcustomasset ล้มเหลว: " .. tostring(lerr), 0) end
+    if not id then error("[ForExecutor] getcustomasset: "..tostring(lerr), 0) end
     return id
 end
 
@@ -2574,7 +2602,7 @@ if CFG.AutoPlay then API:Play() end
 
 _G.SpriteExec = API
 _G.SpriteExecGui = gui
-print(("[ForExecutor] ready — %d เฟรม · %d fps"):format(CFG.FrameCount, CFG.Fps))
+print(("[ForExecutor] ✓ %d เฟรม · %d fps"):format(CFG.FrameCount, CFG.Fps))
 `;
 }
 
@@ -2690,36 +2718,36 @@ function genReadme(ext, fmt) {
 
 ═══ ไฟล์ที่ได้ ═══
   ${sheetName}
-${paged ? "" : "  SpriteLib.lua                    → lib ใหญ่ · multi-asset folder · Studio + Executor\n"}  ForExecutorFromStudio.lua        → วาง LocalScript ใน Studio · gui2lua → executor (รองรับหลายหน้า)
-${paged ? "" : "  ForExecutor.lua                  → loadstring ใน Delta/Synapse · GUI + เล่นทันที\n  Frames.lua + VideoPlayer.lua     → Studio (แบบ require)\n"}
+${paged ? "" : "  SpriteLib.lua                    → lib ใหญ่ · multi-asset folder · Studio + Executor\n"}  ForExecutorFromStudio.lua        → วาง LocalScript ใน Studio · gui2lua → executor (v3.4)
+${paged ? "" : "  ForExecutor.lua                  → loadstring ใน Delta/Synapse (v3)\n  Frames.lua + VideoPlayer.lua     → Studio (แบบ require)\n"}
+═══ ★★★ v3.4 แก้อะไร ★★★ ═══
+  1. บังคับ Accept-Encoding: identity → กัน gzip ทำให้ไฟล์พัง
+  2. ถ้าได้ gzip/HTML → throw ทันที (ไม่เขียนไฟล์เสีย)
+  3. หลัง writefile → readfile เทียบขนาดทุกครั้ง
+  4. script.Parent ถ้าไม่ใช่ ImageLabel → หาลูกให้อัตโนมัติ
+  5. ชื่อไฟล์ = djb2(url).ext (ไม่มี #url ต่อท้าย กันชื่อเพี้ยน)
+  6. print ดูขนาด + magic 4 ไบต์แรก (89504E47 = PNG ✓)
+
 ═══ วิธีใช้ ForExecutorFromStudio + gui2lua ═══
-  1. อัปโหลดรูป sheet ทุกหน้าขึ้น host (catbox / imgur / github raw) ได้ direct link
+  1. อัปโหลดรูป sheet ทุกหน้าขึ้น host → เอา direct link
+     ★ แนะนำ catbox.moe (imgur บล็อค hotlink บ่อย)
   2. ใน Studio: สร้าง ScreenGui + ImageLabel
   3. วาง LocalScript ใต้ ImageLabel → paste ForExecutorFromStudio.lua
-  4. แก้ลิงก์ในตาราง URLS ให้ครบทุกหน้า เรียงหน้า 1 → ${L.pages}
-  5. Studio จะ warn (ไม่มี writefile/getcustomasset) → ปล่อยผ่าน ✓
-  6. ใช้ gui2lua แปลงทั้ง ScreenGui → save เป็น .lua
-  7. ใน executor → paste → Execute → เล่นเลย ✓
+  4. แก้ URLS ให้ครบทุกหน้า เรียงหน้า 1 → ${L.pages}
+  5. Studio จะ warn (ไม่มี writefile) → ปล่อยผ่าน ✓
+  6. ใช้ gui2lua แปลงทั้ง ScreenGui → save .lua
+  7. executor → paste → Execute → เล่นเลย ✓
 
-═══ ไฟล์ใหญ่ / อนิเมชั่นยาว ═══
-  • ถ้า sheet ใหญ่เกินขนาดหน้าสูงสุดที่เลือก เว็บจะแตกเป็นหลายรูป
-  • 1 ลิงก์ใน URLS = 1 หน้า (ต้องเรียงตามเลขหน้า)
-  • ถ้าภาพเบลอ/ไม่ขึ้น ให้ลองตั้ง "ขนาดหน้าสูงสุด" เป็น 1024 แล้ว export ใหม่
-  • โหลดรูปไม่ขึ้นหลังเปลี่ยนไฟล์ที่ลิงก์เดิม → ตั้ง Refresh = true ครั้งเดียว
-  • API: _G.SpriteFromStudio:Pause() / :Play() / :SetFrame(n) / :SetFps(n) / :GetPage()
+═══ ถ้ายังพัง ★ อ่าน output window ═══
+  [HTTP] ✓ request · 45231 bytes · magic=89504E47   ← ปกติ
+  [HTTP] ✓ request · 8102 bytes · magic=1F8B0800     ← gzip! โฮสต์บล็อค → ย้าย host
+  [HTTP] ✓ request · 512 bytes · magic=3C68746D     ← HTML (403) → direct link ผิด
 
-═══ Cache location ═══
-  workspace/SpriteLib/from_studio/<hash>_<size>.png
-  (v3.3: filename ใช้ hash djb2 ของ URL + ขนาด → กันเขียนทับ)
+═══ Cache ═══
+  workspace/SpriteLib/from_studio/<hash8>.png
 
-═══ Config ที่ bake ไว้ ═══
-  Columns = ${L.pc}
-  Rows = ${L.pr}
-  FramesPerPage = ${L.fpp}
-  FrameCount = ${state.count}
-  FrameSize = Vector2.new(${c.fw}, ${c.fh})
-  Order = "${state.order}"
-  Fps = ${c.fps}
+═══ API ═══
+  _G.SpriteFromStudio:Pause() / :Play() / :SetFrame(n) / :SetFps(n) / :GetPage()
 `;
 }
 
@@ -2765,7 +2793,7 @@ async function exportZip() {
         const sheet = buildExportPage(p, L);
         const blob = await new Promise(res => sheet.toBlob(res, mime, quality));
         sheet.width = 0; sheet.height = 0;
-        if (!blob) throw new Error("สร้างรูปหน้า " + (p + 1) + " ไม่สำเร็จ (ใหญ่เกิน? ลองลดขนาดหน้า)");
+        if (!blob) throw new Error("สร้างรูปหน้า " + (p + 1) + " ไม่สำเร็จ");
         const data = new Uint8Array(await blob.arrayBuffer());
         files.push({ name: paged ? "sprite_sheet_" + (p + 1) + "." + ext : "sprite_sheet." + ext, data });
       }
